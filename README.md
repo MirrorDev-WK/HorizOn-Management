@@ -29,7 +29,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 - Discord main-voice attendance for linked members
 - Guild attendance totals for in voice, linked-away, and not-linked members
 - Live Discord voice attendance updates without refreshing the page
-- Persist state in localStorage, with optional Supabase shared-database sync
+- Persist state in localStorage without Supabase, or use Supabase as the shared source of truth when configured
 - HorizOn dark-green fantasy theme
 - Clear lineup suitable for screenshots/sharing
 
@@ -52,7 +52,7 @@ backend features without a clear requirement.
 4. On desktop, drag members between Unassigned, Parties, and Reserve.
 5. Check party capacity and remaining Unassigned members.
 6. Check whether linked members are in the main Discord voice channel.
-7. Changes persist automatically in the browser and, when configured, to the shared Supabase database.
+7. Changes persist automatically: locally when Supabase is not configured, or in the shared Supabase database when it is configured.
 8. Use the final lineup for Guild League.
 
 ## Mobile First
@@ -109,9 +109,10 @@ export const DEFAULT_PARTY_CAPACITY = 5;
 
 ## Persistence
 
-Use localStorage as the immediate/offline fallback. Supabase is optional shared
-persistence for one HorizOn guild; its public URL and publishable key belong in
-`.env.local`, never source control.
+Without Supabase, the app persists to localStorage. When Supabase is configured,
+it is the shared source of truth for the guild roster and party setup; the
+website loads and saves that remote state instead of restoring a browser cache.
+Its public URL and publishable key belong in `.env.local`, never source control.
 
 ### Enable shared Supabase data
 
@@ -121,9 +122,9 @@ persistence for one HorizOn guild; its public URL and publishable key belong in
    **Publishable** key from Supabase's Connect panel.
 4. Restart `npm run dev`.
 
-The first connected device copies its current roster and party setup to the
-shared database. Later devices use that shared setup. This starter version has
-no login, so anyone with access to the configured app can edit the roster.
+The first connected device creates an empty shared state if none exists. Later
+devices use that shared setup. This starter version has no login, so anyone with
+access to the configured app can edit the roster.
 Keep the app private until manager authentication is added.
 
 ### Clear all shared Supabase data
@@ -133,10 +134,10 @@ removes the one shared HorizOn roster, parties, Reserve assignments, Discord
 character links, and stored voice statuses. It is a manual recovery/reset tool,
 not a website button.
 
-Before running it, stop the Discord bot and close browser tabs that still hold
-an old local roster; otherwise a stale browser can save its old data back into
-Supabase. Paste the script into the Supabase SQL Editor and run it only when you
-intend to erase all shared guild data. It does not clear local browser storage.
+Before running it, stop the Discord bot and close browser tabs using an older
+deployment. Paste the script into the Supabase SQL Editor and run it only when
+you intend to erase all shared guild data. It does not clear local browser
+storage, but the current app ignores that cache when Supabase is configured.
 
 ### Deploy the website to Vercel
 
@@ -165,8 +166,8 @@ host that runs `npm run discord:bot`.
 Use **Import members** in the Member Pool and select an `.xlsx` or `.csv` file.
 The first row must include **Character Name** (or **Name**) and
 **Class** (or **Job**). The app previews valid rows before import, skips duplicate
-character names already in the roster, and saves the imported members using the
-normal localStorage/Supabase state flow. A third optional **Discord User ID**
+character names already in the roster, and saves the imported members to the
+active persistence source (Supabase when configured). A third optional **Discord User ID**
 column can be included for bulk Discord linking; the website ignores that
 sensitive column and the bot imports it separately. Older files with only
 Character Name and Class remain fully supported; those imported members start

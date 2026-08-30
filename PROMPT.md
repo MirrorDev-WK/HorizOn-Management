@@ -164,7 +164,9 @@ classes (Swordsman, Mage, Archer, Acolyte, Thief, Merchant, Gunslinger, and
 Druid) plus the six current second-job advancements (Knight, Wizard, Hunter,
 Priest, Assassin, and Blacksmith). Retain an **Other / custom class** choice for
 future server-specific jobs. New members begin Unassigned and Not linked.
-Persist state locally and, when configured, to Supabase.
+Without Supabase, persist state locally. When Supabase is configured, load and
+save the shared guild state there as the source of truth; do not restore or
+re-upload a stale local browser roster.
 
 Provide an **Import members** action for `.xlsx` and `.csv` roster
 files. Require Character Name/Name and Class/Job columns, preview the valid

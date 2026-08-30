@@ -4,13 +4,13 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 
 ## Current Product Decisions
 
-- The app is a single-guild Next.js app with localStorage fallback and optional Supabase shared-database persistence. Supabase configuration is pending; never commit its credentials.
+- The app is a single-guild Next.js app. Without Supabase it uses localStorage; once Supabase is configured, Supabase is the sole shared roster and party-state source of truth. Never commit its credentials.
 - Member cards show **name**, **class name**, and optional manual **CP** only. Tank/DPS/Healer/Support labels and role filters are intentionally removed.
 - Each class has a dedicated original UI icon drawn from the Lucide icon set; these replace the previous generic sword icon.
 - CP is display-only; there is no CP syncing or external API.
 - Real guild members can be added with name, class, and optional CP. They persist with party state and begin Unassigned; Reset Party Setup must not remove them.
 - Add Member uses a mobile-friendly dropdown of the 14 current Ragnarok: The New World job names: eight launch classes and six current advancements. Other/custom remains available for future classes.
-- Roster import accepts a user-selected `.xlsx` or `.csv` file with Character Name/Name and Class/Job columns. It previews valid rows, appends only non-duplicate names, and persists through the same localStorage/Supabase guild state flow as manual member additions.
+- Roster import accepts a user-selected `.xlsx` or `.csv` file with Character Name/Name and Class/Job columns. It previews valid rows, appends only non-duplicate names, and persists through the same configured source as manual member additions (Supabase when configured).
 - Discord voice attendance is now approved. A separate server-side bot must link Discord users to characters and update only the configured main voice channel's presence; general Discord integration remains out of scope.
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
@@ -155,3 +155,9 @@ npm run build
 - Changed Unassigned to show every member who is not in a party or Reserve. Discord attendance no longer hides Away or Not linked members; the card badge communicates their status instead.
 - Added [`supabase/clear-guild-data.sql`](supabase/clear-guild-data.sql), a manual, destructive Supabase reset for the complete shared guild state and Discord attendance data. It includes a warning to stop the bot and close stale browser tabs first.
 - Verified the Unassigned-state behavior with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Made configured Supabase projects remote-first: the website loads the roster and party state exclusively from Supabase and saves changes there. It no longer restores or re-uploads an old browser localStorage roster when Supabase is configured.
+- localStorage remains available only when no Supabase configuration is present. A new configured Supabase project begins with an empty shared state.
+- Verified with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.

@@ -279,16 +279,18 @@ export default function PartySetupPage() {
   useEffect(() => {
     let isCurrent = true;
     const restoreState = async () => {
-      let saved = loadGuildState();
+      let saved: GuildState;
       if (isSupabaseConfigured()) {
         const remote = await loadSharedGuildState();
         if (remote.error) {
-          if (isCurrent) setDatabaseMessage("Shared database is unavailable. Saving on this device instead.");
+          saved = createEmptyGuildState();
+          if (isCurrent) setDatabaseMessage("Shared database is unavailable. Fix the Supabase connection before making changes.");
         } else if (remote.state) {
           saved = remote.state;
         } else {
+          saved = createEmptyGuildState();
           const error = await saveSharedGuildState(saved);
-          if (error && isCurrent) setDatabaseMessage("Could not create the shared guild roster. Saving on this device instead.");
+          if (error && isCurrent) setDatabaseMessage("Could not create the shared guild roster. Fix the Supabase connection before making changes.");
         }
         const attendance = await loadDiscordVoiceAttendance();
         if (attendance.error) {
@@ -296,6 +298,8 @@ export default function PartySetupPage() {
         } else {
           saved = mergeDiscordVoiceAttendance(saved, attendance.attendance);
         }
+      } else {
+        saved = loadGuildState();
       }
       if (!isCurrent) return;
       setGuildState(saved);
@@ -308,12 +312,13 @@ export default function PartySetupPage() {
 
   useEffect(() => {
     if (!isReady) return;
-    saveGuildState(guildState);
     if (isSupabaseConfigured()) {
       void saveSharedGuildState(guildState).then((error) => {
-        if (error) setDatabaseMessage("Shared database is unavailable. Saving on this device instead.");
+        if (error) setDatabaseMessage("Shared database is unavailable. Changes could not be saved.");
         else setDatabaseMessage("");
       });
+    } else {
+      saveGuildState(guildState);
     }
   }, [guildState, isReady]);
 
