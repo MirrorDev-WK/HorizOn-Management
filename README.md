@@ -19,7 +19,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 - Assign members to parties
 - Move members between parties
 - Reserve members
-- Automatically calculated Unassigned list focused on members currently in the main Discord voice channel
+- Automatically calculated Unassigned list showing every unassigned guild member
 - Prevent duplicate member assignments
 - Default party capacity of 5
 - Mobile tap-to-assign flow
@@ -47,7 +47,7 @@ backend features without a clear requirement.
 ## Main User Flow
 
 1. Open Party Setup.
-2. See unassigned members currently in the configured main Discord voice channel and existing parties.
+2. See every unassigned member and existing parties; each member card shows their Discord voice status when linked.
 3. On mobile, tap a member and choose a destination.
 4. On desktop, drag members between Unassigned, Parties, and Reserve.
 5. Check party capacity and remaining Unassigned members.
@@ -125,6 +125,18 @@ The first connected device copies its current roster and party setup to the
 shared database. Later devices use that shared setup. This starter version has
 no login, so anyone with access to the configured app can edit the roster.
 Keep the app private until manager authentication is added.
+
+### Clear all shared Supabase data
+
+[`supabase/clear-guild-data.sql`](supabase/clear-guild-data.sql) permanently
+removes the one shared HorizOn roster, parties, Reserve assignments, Discord
+character links, and stored voice statuses. It is a manual recovery/reset tool,
+not a website button.
+
+Before running it, stop the Discord bot and close browser tabs that still hold
+an old local roster; otherwise a stale browser can save its old data back into
+Supabase. Paste the script into the Supabase SQL Editor and run it only when you
+intend to erase all shared guild data. It does not clear local browser storage.
 
 ### Deploy the website to Vercel
 

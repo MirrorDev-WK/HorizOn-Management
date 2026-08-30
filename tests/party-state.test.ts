@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "../src/features/party-manager/constants";
 import type { GuildMember, GuildState } from "../src/features/party-manager/types";
-import { getUnassignedInMainVoiceMembers, getUnassignedMembers, moveMember, normalizeGuildState, swapMemberPositions } from "../src/features/party-manager/utils";
+import { getUnassignedMembers, moveMember, normalizeGuildState, swapMemberPositions } from "../src/features/party-manager/utils";
 import { parseMemberImportRows } from "../src/lib/member-import";
 import { parseDiscordLinkImportRows } from "../src/lib/discord-link-import";
 
@@ -49,11 +49,10 @@ test("normalization removes duplicates and invalid member ids", () => {
   assert.deepEqual(normalized.reserveMemberIds, ["astra"]);
 });
 
-test("the live unassigned queue includes only members currently in main voice", () => {
+test("unassigned contains members regardless of Discord voice status", () => {
   const state = freshState();
   state.members = state.members.map((member) => ({ ...member, isInMainVoice: member.id === "mira" }));
-  assert.deepEqual(getUnassignedInMainVoiceMembers(state, state.members).map((member) => member.id), ["mira"]);
-  assert.deepEqual(getUnassignedMembers(state, state.members).map((member) => member.id).includes("mira"), true);
+  assert.deepEqual(getUnassignedMembers(state, state.members).map((member) => member.id), ["astra", "mira", "thorn", "lune", "ciel"]);
 });
 
 test("swapping positions only changes the order within one party", () => {

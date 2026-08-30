@@ -177,10 +177,10 @@ Away means outside the configured main voice channel, not necessarily offline
 on Discord. The dashboard updates the status live without a page refresh, but only the
 server-side bot may change it.
 
-The Unassigned pool is a live attendance queue: show only unassigned members
-currently in the configured main voice channel. Do not delete or alter members
-who are away; they remain in the roster and can still be moved from a party or
-Reserve.
+The Unassigned pool is the complete derived list of unassigned guild members.
+Show In voice, Away, and Not linked members together; the static status badge
+communicates attendance without hiding anyone. Do not delete or alter members
+because of their voice status.
 
 ## Class Visuals
 

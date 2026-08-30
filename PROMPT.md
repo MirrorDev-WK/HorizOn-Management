@@ -186,7 +186,7 @@ Each compact card contains:
 Support search by character name and class.
 
 When the list is long, make the Unassigned member area scrollable. Clearly say
-when no unassigned members are currently in voice.
+when there are no unassigned members or no search matches.
 
 ## Party Cards
 
@@ -241,6 +241,11 @@ Gracefully handle corrupted/missing data and start with an empty roster on a new
 Provide `Reset Party Setup`.
 
 It clears assignments but does not delete guild members.
+
+Provide a separate, manually run Supabase SQL reset script for an administrator
+who explicitly wants to erase the shared roster, parties, Reserve assignments,
+Discord links, and stored voice attendance. Never expose this destructive reset
+as an ordinary website action.
 
 ## Suggested Structure
 

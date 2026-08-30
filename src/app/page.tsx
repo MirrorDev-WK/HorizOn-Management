@@ -34,7 +34,7 @@ import type { LucideIcon } from "lucide-react";
 import { createElement, useEffect, useMemo, useState } from "react";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "@/features/party-manager/constants";
 import type { Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
-import { createEmptyGuildState, getPartyMembers, getUnassignedInMainVoiceMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
+import { createEmptyGuildState, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
 import { loadGuildState, resetGuildState, saveGuildState } from "@/lib/storage";
 import { readMemberImportFile, type ImportedMember, type MemberImportResult } from "@/lib/member-import";
 import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance } from "@/lib/supabase";
@@ -334,14 +334,14 @@ export default function PartySetupPage() {
     };
   }, [isReady]);
 
-  const unassignedInVoice = useMemo(() => getUnassignedInMainVoiceMembers(guildState, guildState.members), [guildState]);
+  const unassignedMembers = useMemo(() => getUnassignedMembers(guildState, guildState.members), [guildState]);
   const inVoiceMemberCount = useMemo(() => guildState.members.filter((member) => member.isInMainVoice).length, [guildState.members]);
   const linkedAwayMemberCount = useMemo(() => guildState.members.filter((member) => member.isDiscordLinked && !member.isInMainVoice).length, [guildState.members]);
   const notLinkedMemberCount = useMemo(() => guildState.members.filter((member) => !member.isDiscordLinked).length, [guildState.members]);
-  const filteredUnassignedInVoice = useMemo(() => {
+  const filteredUnassignedMembers = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return unassignedInVoice.filter((member) => !needle || `${member.name} ${member.className}`.toLowerCase().includes(needle));
-  }, [unassignedInVoice, search]);
+    return unassignedMembers.filter((member) => !needle || `${member.name} ${member.className}`.toLowerCase().includes(needle));
+  }, [unassignedMembers, search]);
 
   const announce = (message: string) => {
     setToast(message);
@@ -441,11 +441,11 @@ export default function PartySetupPage() {
 
         <aside className="member-pool" id="member-pool">
           <DroppableArea id="unassigned" className="unassigned-zone drop-zone">
-          <div className="pool-title"><div><p className="eyebrow">Live main voice</p><h1>Unassigned <span>{unassignedInVoice.length}</span></h1></div><div className="pool-actions"><button className="icon-button" type="button" aria-label="Import members" onClick={() => setIsImportMembersOpen(true)}><FileUp size={17} /></button><button className="icon-button" type="button" aria-label="Add member" onClick={() => setIsAddMemberOpen(true)}><Plus size={18} /></button></div></div>
-          <label className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or class" aria-label="Search unassigned members in voice" /></label>
+          <div className="pool-title"><div><p className="eyebrow">Guild roster</p><h1>Unassigned <span>{unassignedMembers.length}</span></h1></div><div className="pool-actions"><button className="icon-button" type="button" aria-label="Import members" onClick={() => setIsImportMembersOpen(true)}><FileUp size={17} /></button><button className="icon-button" type="button" aria-label="Add member" onClick={() => setIsAddMemberOpen(true)}><Plus size={18} /></button></div></div>
+          <label className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or class" aria-label="Search unassigned members" /></label>
           <div className="member-list">
-            {filteredUnassignedInVoice.map((member) => <DraggableMember key={member.id} member={member} compact onSelect={setSelectedMember} />)}
-            {filteredUnassignedInVoice.length === 0 && <p className="empty-list">{unassignedInVoice.length === 0 ? "No unassigned members are in voice." : "No matching members in voice."}</p>}
+            {filteredUnassignedMembers.map((member) => <DraggableMember key={member.id} member={member} compact onSelect={setSelectedMember} />)}
+            {filteredUnassignedMembers.length === 0 && <p className="empty-list">{unassignedMembers.length === 0 ? "No unassigned members yet." : "No matching members."}</p>}
           </div>
           </DroppableArea>
         </aside>

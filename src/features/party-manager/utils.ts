@@ -25,10 +25,6 @@ export function getUnassignedMembers(state: GuildState, members: GuildMember[]):
   return members.filter((member) => !occupied.has(member.id));
 }
 
-export function getUnassignedInMainVoiceMembers(state: GuildState, members: GuildMember[]): GuildMember[] {
-  return getUnassignedMembers(state, members).filter((member) => member.isInMainVoice);
-}
-
 export function getPartyMembers(party: Party, members: GuildMember[]): GuildMember[] {
   const lookup = new Map(members.map((member) => [member.id, member]));
   return party.memberIds.flatMap((id) => {

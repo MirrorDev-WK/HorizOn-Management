@@ -12,7 +12,7 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - Add Member uses a mobile-friendly dropdown of the 14 current Ragnarok: The New World job names: eight launch classes and six current advancements. Other/custom remains available for future classes.
 - Roster import accepts a user-selected `.xlsx` or `.csv` file with Character Name/Name and Class/Job columns. It previews valid rows, appends only non-duplicate names, and persists through the same localStorage/Supabase guild state flow as manual member additions.
 - Discord voice attendance is now approved. A separate server-side bot must link Discord users to characters and update only the configured main voice channel's presence; general Discord integration remains out of scope.
-- The Unassigned pool is a live main-voice queue: it displays only members currently in the configured Discord voice channel. Away and unlinked members remain stored in the roster; the filter must never change assignments or delete data.
+- The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
 - No generated class PNG assets are currently integrated. Original transparent class-image generation is pending; use the current class-specific Lucide icons until that work resumes.
 
@@ -149,3 +149,9 @@ npm run build
 - Fixed the desktop layout when many parties exist: the Unassigned column now stretches alongside the complete party list instead of ending after one viewport.
 - Added Vercel deployment guidance, including the separation between the Vercel website and the always-running Discord bot.
 - Verified with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Changed Unassigned to show every member who is not in a party or Reserve. Discord attendance no longer hides Away or Not linked members; the card badge communicates their status instead.
+- Added [`supabase/clear-guild-data.sql`](supabase/clear-guild-data.sql), a manual, destructive Supabase reset for the complete shared guild state and Discord attendance data. It includes a warning to stop the bot and close stale browser tabs first.
+- Verified the Unassigned-state behavior with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
