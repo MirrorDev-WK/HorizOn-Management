@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { normalizeGuildState } from "@/features/party-manager/utils";
-import type { GuildMember, GuildState, Party } from "@/features/party-manager/types";
+import type { AuctionPage, GuildMember, GuildState, Party } from "@/features/party-manager/types";
 
 const GUILD_STATE_ID = "horizon";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -111,7 +111,8 @@ function parseGuildState(value: unknown): GuildState | null {
   const members = candidate.members.filter(isGuildMember);
   const parties = candidate.parties.filter(isParty);
   const reserveMemberIds = candidate.reserveMemberIds.filter((id): id is string => typeof id === "string");
-  return normalizeGuildState({ members, parties, reserveMemberIds });
+  const auctionPages = Array.isArray(candidate.auctionPages) ? candidate.auctionPages.filter(isAuctionPage) : [];
+  return normalizeGuildState({ members, parties, reserveMemberIds, auctionPages });
 }
 
 function isGuildMember(value: unknown): value is GuildMember {
@@ -124,4 +125,14 @@ function isParty(value: unknown): value is Party {
   if (!value || typeof value !== "object") return false;
   const party = value as Partial<Party>;
   return typeof party.id === "string" && typeof party.name === "string" && Array.isArray(party.memberIds) && party.memberIds.every((id) => typeof id === "string");
+}
+
+function isAuctionPage(value: unknown): value is AuctionPage {
+  if (!value || typeof value !== "object") return false;
+  const page = value as Partial<AuctionPage>;
+  return typeof page.id === "string" && typeof page.name === "string" && Array.isArray(page.items) && page.items.every((item) => {
+    if (!item || typeof item !== "object") return false;
+    const candidate = item as Partial<AuctionPage["items"][number]>;
+    return typeof candidate.id === "string" && typeof candidate.name === "string" && Array.isArray(candidate.bidderMemberIds) && candidate.bidderMemberIds.every((memberId) => typeof memberId === "string") && (candidate.eliminatedBidderMemberIds === undefined || (Array.isArray(candidate.eliminatedBidderMemberIds) && candidate.eliminatedBidderMemberIds.every((memberId) => typeof memberId === "string"))) && (candidate.winnerMemberId === undefined || typeof candidate.winnerMemberId === "string");
+  });
 }

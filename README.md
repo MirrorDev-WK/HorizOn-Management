@@ -29,6 +29,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 - Discord main-voice attendance for linked members
 - Guild attendance totals for in voice, linked-away, and not-linked members
 - Live Discord voice attendance updates without refreshing the page
+- Auction board with four item rows per page, roster-member bidder lists, and an elimination wheel for contested items
 - Persist state in localStorage without Supabase, or use Supabase as the shared source of truth when configured
 - HorizOn dark-green fantasy theme
 - Clear lineup suitable for screenshots/sharing
@@ -54,6 +55,23 @@ backend features without a clear requirement.
 6. Check whether linked members are in the main Discord voice channel.
 7. Changes persist automatically: locally when Supabase is not configured, or in the shared Supabase database when it is configured.
 8. Use the final lineup for Guild League.
+
+## Auction Board
+
+Use **Auction** in the navigation to record Guild League item bids. Each auction
+page always contains four item rows. Name an item, choose a guild member from
+the shared roster, and add their name as a bidder. When two or more members bid,
+use **Spin to remove** to open the draw, then press **Spin the wheel** inside
+the popup to eliminate one named slice at a time. Each spin lands
+at a random safe position inside that slice, not always its center. The draw popup
+stays open for **Spin again** with the remaining members, and its **×** button
+can cancel and close the draw; the final person left
+is saved as the winner. Changing
+the bidder list resets the draw. You can delete a page when
+more than one exists. **Clear auction** resets the full board to one empty default
+**Page 1**, removing all other pages, item names, bidders, and winners. A member may bid on more than
+one item. Bid amounts and payment handling are intentionally not part of this
+MVP.
 
 ## Mobile First
 

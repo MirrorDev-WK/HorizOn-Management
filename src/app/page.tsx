@@ -31,18 +31,21 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "@/features/party-manager/constants";
-import type { Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
-import { createEmptyGuildState, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
+import type { AuctionPage, Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
+import { clearAuctionPages, createAuctionPage, createEmptyGuildState, deleteAuctionPage, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
 import { loadGuildState, resetGuildState, saveGuildState } from "@/lib/storage";
 import { readMemberImportFile, type ImportedMember, type MemberImportResult } from "@/lib/member-import";
 import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance } from "@/lib/supabase";
 
 type DropId = `party:${string}` | `member:${string}:${string}` | "reserve" | "unassigned";
 type NewMemberInput = Pick<GuildMember, "name" | "className" | "cp">;
+type AppView = "party" | "auction";
+type WheelSpinSession = { pageId: string; itemId: string; itemName: string; bidders: GuildMember[]; eliminatedMember?: GuildMember; finalWinner?: GuildMember; rotationDegrees: number };
 
 const CUSTOM_CLASS_VALUE = "__custom_class__";
+const WHEEL_DRAW_DURATION_MS = 7000;
 
 const classIcons: Record<string, LucideIcon> = {
   Paladin: ShieldCheck,
@@ -152,6 +155,152 @@ function PartyCard({ party, members, active, onSelectMember, onRename, onDelete 
         ))}
         {partyMembers.length === 0 && <p className="drop-hint">Drop here or tap a member to assign.</p>}
       </div>
+    </section>
+  );
+}
+
+function wheelSliceColor(index: number): string {
+  const hue = (index * 137.508) % 360;
+  const lightness = 38 + (index % 3) * 5;
+  return `hsl(${hue} 68% ${lightness}%)`;
+}
+
+function getRandomIndex(length: number): number {
+  const values = new Uint32Array(1);
+  window.crypto.getRandomValues(values);
+  return values[0] % length;
+}
+
+function getRandomRatio(): number {
+  const values = new Uint32Array(1);
+  window.crypto.getRandomValues(values);
+  return values[0] / 4_294_967_296;
+}
+
+function pointOnWheel(angle: number, radius: number): { x: number; y: number } {
+  const radians = (angle - 90) * (Math.PI / 180);
+  return { x: 120 + radius * Math.cos(radians), y: 120 + radius * Math.sin(radians) };
+}
+
+function wheelSlicePath(startAngle: number, endAngle: number): string {
+  const start = pointOnWheel(startAngle, 112);
+  const end = pointOnWheel(endAngle, 112);
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  return `M 120 120 L ${start.x} ${start.y} A 112 112 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+}
+
+function BiddingWheel({ bidders, selectedMemberId, isSpinning, rotationDegrees }: { bidders: GuildMember[]; selectedMemberId: string; isSpinning: boolean; rotationDegrees: number }) {
+  const wheelRef = useRef<SVGSVGElement>(null);
+  const sliceAngle = 360 / bidders.length;
+  const labelFontSize = Math.max(8, Math.min(16, 25 - bidders.length));
+  const labelLength = Math.max(32, Math.min(105, sliceAngle * 1.35));
+
+  useEffect(() => {
+    if (!isSpinning || !wheelRef.current) return;
+    const animation = wheelRef.current.animate(
+      [
+        { transform: "rotate(0deg) scale(.98)" },
+        { transform: `rotate(${rotationDegrees}deg) scale(1)` },
+      ],
+      { duration: WHEEL_DRAW_DURATION_MS, easing: "cubic-bezier(.08,.67,.16,1)", fill: "both" },
+    );
+    return () => animation.cancel();
+  }, [isSpinning, rotationDegrees]);
+
+  return <svg ref={wheelRef} className="wheel-graphic" style={{ transform: isSpinning ? undefined : `rotate(${rotationDegrees}deg)` } as CSSProperties} viewBox="0 0 240 240" role="img" aria-label="Elimination wheel">
+    <circle cx="120" cy="120" r="116" className="wheel-graphic__rim" />
+    {bidders.map((member, index) => {
+      const startAngle = index * sliceAngle;
+      const endAngle = (index + 1) * sliceAngle;
+      const middleAngle = startAngle + sliceAngle / 2;
+      const label = pointOnWheel(middleAngle, 75);
+      const labelRotation = middleAngle - 90 + (middleAngle > 90 && middleAngle < 270 ? 180 : 0);
+      return <g key={member.id} className={!isSpinning && member.id === selectedMemberId ? "wheel-slice wheel-slice--winner" : "wheel-slice"}>
+        <path d={wheelSlicePath(startAngle, endAngle)} fill={wheelSliceColor(index)} />
+        <text x={label.x} y={label.y} fontSize={labelFontSize} textLength={labelLength} lengthAdjust="spacingAndGlyphs" transform={`rotate(${labelRotation} ${label.x} ${label.y})`}>{member.name}</text>
+      </g>;
+    })}
+    <circle cx="120" cy="120" r="20" className="wheel-graphic__hub" />
+    <text x="120" y="126" className="wheel-graphic__mark">✦</text>
+  </svg>;
+}
+
+function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAuction, onRenameItem, onAddBidder, onRemoveBidder, onEliminateBidder }: {
+  pages: AuctionPage[];
+  members: GuildMember[];
+  onCreatePage: () => void;
+  onDeletePage: (pageId: string) => void;
+  onClearAuction: () => void;
+  onRenameItem: (pageId: string, itemId: string, name: string) => void;
+  onAddBidder: (pageId: string, itemId: string, memberId: string) => void;
+  onRemoveBidder: (pageId: string, itemId: string, memberId: string) => void;
+  onEliminateBidder: (pageId: string, itemId: string, memberId: string) => void;
+}) {
+  const [selectedPageId, setSelectedPageId] = useState(pages[0]?.id ?? "");
+  const [wheelSession, setWheelSession] = useState<WheelSpinSession | null>(null);
+  const [isWheelSpinning, setIsWheelSpinning] = useState(false);
+  const page = pages.find((candidate) => candidate.id === selectedPageId) ?? pages[0];
+  const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+
+  useEffect(() => {
+    const eliminatedMember = wheelSession?.eliminatedMember;
+    if (!wheelSession || !eliminatedMember || !isWheelSpinning) return;
+    const timer = window.setTimeout(() => {
+      onEliminateBidder(wheelSession.pageId, wheelSession.itemId, eliminatedMember.id);
+      setIsWheelSpinning(false);
+    }, WHEEL_DRAW_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [isWheelSpinning, onEliminateBidder, wheelSession]);
+
+  const openEliminationWheel = (pageId: string, itemId: string, itemName: string, bidders: GuildMember[]) => {
+    setIsWheelSpinning(false);
+    setWheelSession({ pageId, itemId, itemName, bidders, rotationDegrees: 0 });
+  };
+
+  const startEliminationRound = (pageId: string, itemId: string, itemName: string, bidders: GuildMember[]) => {
+    if (bidders.length < 2) return;
+    const eliminatedMember = bidders[getRandomIndex(bidders.length)];
+    const eliminatedIndex = bidders.findIndex((member) => member.id === eliminatedMember.id);
+    const sliceAngle = 360 / bidders.length;
+    const sideOffset = getRandomIndex(2) === 0 ? 0.13 + getRandomRatio() * 0.24 : 0.63 + getRandomRatio() * 0.24;
+    const rotationDegrees = 360 * (10 + getRandomIndex(4)) - (eliminatedIndex * sliceAngle + sliceAngle * sideOffset);
+    const finalists = bidders.filter((member) => member.id !== eliminatedMember.id);
+    setWheelSession({ pageId, itemId, itemName, bidders, eliminatedMember, finalWinner: finalists.length === 1 ? finalists[0] : undefined, rotationDegrees });
+    setIsWheelSpinning(true);
+  };
+
+  if (!page) return null;
+
+  return (
+    <section className="auction-board" aria-label="Guild League auction">
+      <div className="workspace-head auction-head"><div><p className="eyebrow">Guild League · Auction</p><h1>Item bids</h1><p className="workspace-subtitle">Choose members from the guild roster to record who wants each item.</p></div><div className="auction-head__actions"><button className="secondary-button" type="button" disabled={pages.length <= 1} onClick={() => { if (!window.confirm(`Delete ${page.name}? Its item bids and winner results will be removed.`)) return; setSelectedPageId(pages.find((candidate) => candidate.id !== page.id)?.id ?? ""); onDeletePage(page.id); }}><Trash2 size={16} />Delete page</button><button className="secondary-button" type="button" onClick={onClearAuction}><Trash2 size={16} />Clear auction</button><button className="primary-button" type="button" onClick={onCreatePage}><Plus size={18} />New page</button></div></div>
+      <div className="auction-page-tabs" aria-label="Select auction page">{pages.map((candidate) => <button key={candidate.id} className={candidate.id === page.id ? "auction-page-tab auction-page-tab--active" : "auction-page-tab"} type="button" onClick={() => setSelectedPageId(candidate.id)}>{candidate.name}</button>)}</div>
+      <div className="auction-items">{page.items.map((item, index) => {
+        const bidders = item.bidderMemberIds.flatMap((memberId) => {
+          const member = memberById.get(memberId);
+          return member ? [member] : [];
+        });
+        const eliminatedMemberIds = new Set(item.eliminatedBidderMemberIds ?? []);
+        const remainingBidders = bidders.filter((member) => !eliminatedMemberIds.has(member.id));
+        const winner = item.winnerMemberId ? memberById.get(item.winnerMemberId) : undefined;
+        return <section className="auction-item" key={item.id}>
+          <div className="auction-item__top"><p className="eyebrow">Item {index + 1}</p><input aria-label={`Item ${index + 1} name`} defaultValue={item.name} onBlur={(event) => onRenameItem(page.id, item.id, event.target.value)} placeholder="Item name" /></div>
+          <div className="auction-item__bid"><select aria-label={`Choose bidder for ${item.name}`} defaultValue="" disabled={members.length === 0} onChange={(event) => { if (event.target.value) onAddBidder(page.id, item.id, event.target.value); event.currentTarget.value = ""; }}><option value="">{members.length === 0 ? "Add guild members first" : "Add guild member as bidder"}</option>{members.map((member) => <option key={member.id} value={member.id} disabled={item.bidderMemberIds.includes(member.id)}>{member.name} · {member.className}</option>)}</select></div>
+          <div className="auction-bidders" aria-label={`Bidders for ${item.name}`}>{bidders.length > 0 ? bidders.map((member) => <span className={eliminatedMemberIds.has(member.id) ? "auction-bidder auction-bidder--eliminated" : "auction-bidder"} key={member.id}>{member.name}{eliminatedMemberIds.has(member.id) && <em>Out</em>}<button type="button" aria-label={`Remove ${member.name} from ${item.name}`} onClick={() => onRemoveBidder(page.id, item.id, member.id)}><X size={13} /></button></span>) : <span className="auction-empty">No bidders yet</span>}</div>
+          {bidders.length > 1 && <div className="auction-wheel-row">
+            <div className="auction-winner"><span>{winner ? <>Winner: <strong>{winner.name}</strong></> : `${remainingBidders.length} members remain`}</span>{remainingBidders.length > 1 && <button className="secondary-button" type="button" onClick={() => openEliminationWheel(page.id, item.id, item.name, remainingBidders)}>Spin to remove</button>}</div>
+          </div>}
+        </section>;
+      })}</div>
+      {wheelSession && <div className="wheel-modal-backdrop" role="presentation">
+        <section className="wheel-modal" role="dialog" aria-modal="true" aria-labelledby="wheel-title" onMouseDown={(event) => event.stopPropagation()}>
+          <button className="icon-button wheel-modal__dismiss" type="button" aria-label="Close elimination wheel" onClick={() => { setIsWheelSpinning(false); setWheelSession(null); }}><X size={20} /></button>
+          <p className="eyebrow">Guild League elimination</p><h2 id="wheel-title">{wheelSession.itemName}</h2><p className="wheel-modal__message">{isWheelSpinning ? "The wheel is choosing who is out…" : wheelSession.finalWinner ? "Final elimination!" : wheelSession.eliminatedMember ? "One member is out." : "Press spin when everyone is ready."}</p>
+          <div className="wheel-modal__stage"><span className="wheel-pointer" aria-hidden="true" /><BiddingWheel bidders={wheelSession.bidders} selectedMemberId={wheelSession.eliminatedMember?.id ?? ""} isSpinning={isWheelSpinning} rotationDegrees={wheelSession.rotationDegrees} /></div>
+          {!isWheelSpinning && !wheelSession.eliminatedMember && <button className="primary-button wheel-modal__close" type="button" onClick={() => startEliminationRound(wheelSession.pageId, wheelSession.itemId, wheelSession.itemName, wheelSession.bidders)}>Spin the wheel</button>}
+          {!isWheelSpinning && wheelSession.eliminatedMember && <><p className="wheel-result">{wheelSession.finalWinner ? <><X size={20} /><strong>{wheelSession.eliminatedMember.name}</strong> is out. <Crown size={20} /><strong>{wheelSession.finalWinner.name}</strong> wins this item.</> : <><X size={20} /><strong>{wheelSession.eliminatedMember.name}</strong> is out. Spin again with the remaining members.</>}</p><button className="primary-button wheel-modal__close" type="button" onClick={() => wheelSession.finalWinner ? setWheelSession(null) : startEliminationRound(wheelSession.pageId, wheelSession.itemId, wheelSession.itemName, wheelSession.bidders.filter((member) => member.id !== wheelSession.eliminatedMember?.id))}>{wheelSession.finalWinner ? "Continue" : "Spin again"}</button></>}
+        </section>
+      </div>}
     </section>
   );
 }
@@ -271,6 +420,7 @@ export default function PartySetupPage() {
   const [reorderPartyId, setReorderPartyId] = useState<string | null>(null);
   const [activeDragMemberId, setActiveDragMemberId] = useState<string | null>(null);
   const [selectedPartyId, setSelectedPartyId] = useState("");
+  const [activeView, setActiveView] = useState<AppView>("party");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
   const [databaseMessage, setDatabaseMessage] = useState("");
@@ -411,6 +561,78 @@ export default function PartySetupPage() {
     setSelectedPartyId((current) => current === party.id ? guildState.parties.find((item) => item.id !== party.id)?.id ?? "" : current);
   };
 
+  const addAuctionPage = () => {
+    setGuildState((current) => {
+      const pageNumber = current.auctionPages.length + 1;
+      const page = createAuctionPage(`auction-page-${Date.now()}`, `Page ${pageNumber}`);
+      return { ...current, auctionPages: [...current.auctionPages, page] };
+    });
+  };
+
+  const removeAuctionPage = (pageId: string) => {
+    setGuildState((current) => ({ ...current, auctionPages: deleteAuctionPage(current.auctionPages, pageId) }));
+    announce("Auction page deleted.");
+  };
+
+  const clearAuction = () => {
+    if (!window.confirm("Clear the entire Auction and reset it to one empty Page 1? This removes every page, item name, bidder, and winner.")) return;
+    setGuildState((current) => ({ ...current, auctionPages: clearAuctionPages() }));
+    announce("Auction reset to Page 1.");
+  };
+
+  const renameAuctionItem = (pageId: string, itemId: string, rawName: string) => {
+    const name = rawName.trim() || "Untitled item";
+    setGuildState((current) => ({
+      ...current,
+      auctionPages: current.auctionPages.map((page) => page.id !== pageId ? page : {
+        ...page,
+        items: page.items.map((item) => item.id === itemId ? { ...item, name } : item),
+      }),
+    }));
+  };
+
+  const addAuctionBidder = (pageId: string, itemId: string, memberId: string) => {
+    setGuildState((current) => {
+      const item = current.auctionPages.find((page) => page.id === pageId)?.items.find((candidate) => candidate.id === itemId);
+      if (!item || item.bidderMemberIds.includes(memberId)) return current;
+      return {
+        ...current,
+        auctionPages: current.auctionPages.map((page) => page.id !== pageId ? page : {
+          ...page,
+          items: page.items.map((candidate) => candidate.id === itemId ? { ...candidate, bidderMemberIds: [...candidate.bidderMemberIds, memberId], eliminatedBidderMemberIds: [], winnerMemberId: undefined } : candidate),
+        }),
+      };
+    });
+  };
+
+  const removeAuctionBidder = (pageId: string, itemId: string, memberId: string) => {
+    setGuildState((current) => ({
+      ...current,
+      auctionPages: current.auctionPages.map((page) => page.id !== pageId ? page : {
+        ...page,
+        items: page.items.map((item) => item.id === itemId ? { ...item, bidderMemberIds: item.bidderMemberIds.filter((id) => id !== memberId), eliminatedBidderMemberIds: [], winnerMemberId: undefined } : item),
+      }),
+  }));
+  };
+
+  const eliminateAuctionBidder = (pageId: string, itemId: string, memberId: string) => {
+    setGuildState((current) => {
+      const item = current.auctionPages.find((page) => page.id === pageId)?.items.find((candidate) => candidate.id === itemId);
+      const eliminatedBidderMemberIds = item?.eliminatedBidderMemberIds ?? [];
+      const remainingBidderIds = item?.bidderMemberIds.filter((id) => !eliminatedBidderMemberIds.includes(id)) ?? [];
+      if (!item || !remainingBidderIds.includes(memberId) || remainingBidderIds.length <= 1) return current;
+      const nextEliminatedBidderMemberIds = [...eliminatedBidderMemberIds, memberId];
+      const nextRemainingBidderIds = item.bidderMemberIds.filter((id) => !nextEliminatedBidderMemberIds.includes(id));
+      return {
+        ...current,
+        auctionPages: current.auctionPages.map((page) => page.id !== pageId ? page : {
+          ...page,
+          items: page.items.map((candidate) => candidate.id === itemId ? { ...candidate, eliminatedBidderMemberIds: nextEliminatedBidderMemberIds, winnerMemberId: nextRemainingBidderIds.length === 1 ? nextRemainingBidderIds[0] : undefined } : candidate),
+        }),
+      };
+    });
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const memberId = String(event.active.id).replace("member:", "");
     const memberTarget = event.over ? memberDropTargetFromId(String(event.over.id)) : null;
@@ -438,13 +660,13 @@ export default function PartySetupPage() {
       <main className={`app-shell ${activeDragMemberId ? "is-dragging" : ""}`}>
         <aside className="sidebar">
           <div className="brand"><span className="brand-mark"><Sparkles size={21} /></span><span><strong>HorizOn</strong><small>Guild League</small></span></div>
-          <nav><a className="nav-item nav-item--active" href="#party-setup"><Swords size={19} />Party Setup</a></nav>
+          <nav><button className={activeView === "party" ? "nav-item nav-item--active" : "nav-item"} type="button" onClick={() => setActiveView("party")}><Swords size={19} />Party Setup</button><button className={activeView === "auction" ? "nav-item nav-item--active" : "nav-item"} type="button" onClick={() => setActiveView("auction")}><Hammer size={19} />Auction</button></nav>
           <div className="sidebar-note"><Crown size={17} /><span>Ready for<br /><strong>Guild League</strong></span></div>
         </aside>
 
-        <header className="mobile-header"><div className="brand"><span className="brand-mark"><Sparkles size={18} /></span><strong>HorizOn</strong></div><button className="icon-button" type="button" aria-label="Menu"><Menu size={20} /></button></header>
+        <header className="mobile-header"><div className="brand"><span className="brand-mark"><Sparkles size={18} /></span><strong>HorizOn</strong></div><div className="mobile-view-tabs"><button className={activeView === "party" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("party")}>Party</button><button className={activeView === "auction" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("auction")}>Auction</button></div><button className="icon-button" type="button" aria-label="Menu"><Menu size={20} /></button></header>
 
-        <aside className="member-pool" id="member-pool">
+        {activeView === "party" && <aside className="member-pool" id="member-pool">
           <DroppableArea id="unassigned" className="unassigned-zone drop-zone">
           <div className="pool-title"><div><p className="eyebrow">Guild roster</p><h1>Unassigned <span>{unassignedMembers.length}</span></h1></div><div className="pool-actions"><button className="icon-button" type="button" aria-label="Import members" onClick={() => setIsImportMembersOpen(true)}><FileUp size={17} /></button><button className="icon-button" type="button" aria-label="Add member" onClick={() => setIsAddMemberOpen(true)}><Plus size={18} /></button></div></div>
           <label className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or class" aria-label="Search unassigned members" /></label>
@@ -453,9 +675,9 @@ export default function PartySetupPage() {
             {filteredUnassignedMembers.length === 0 && <p className="empty-list">{unassignedMembers.length === 0 ? "No unassigned members yet." : "No matching members."}</p>}
           </div>
           </DroppableArea>
-        </aside>
+        </aside>}
 
-        <section className="workspace" id="party-setup">
+        {activeView === "party" ? <section className="workspace" id="party-setup">
           <div className="workspace-head"><div><p className="eyebrow">Guild League · Party setup</p><h1>Build the lineup</h1><p className="workspace-subtitle">Assign every member once, then check your live main voice channel.</p></div><div className="workspace-head__actions"><div className="attendance-summary" aria-label={`Guild attendance: ${inVoiceMemberCount} in voice, ${linkedAwayMemberCount} away, ${notLinkedMemberCount} not linked`}><span className="attendance-summary__item attendance-summary__item--present"><Headphones size={14} />{inVoiceMemberCount} In voice</span><span className="attendance-summary__item attendance-summary__item--away">{linkedAwayMemberCount} Away</span><span className="attendance-summary__item">{notLinkedMemberCount} Not linked</span></div><button className="primary-button" type="button" onClick={createParty}><Plus size={18} />Create Party</button></div></div>
           <div className="mobile-party-tabs" aria-label="Select party">
             {guildState.parties.map((party) => <button key={party.id} className={selectedPartyId === party.id ? "party-tab party-tab--active" : "party-tab"} type="button" onClick={() => setSelectedPartyId(party.id)}>{party.name}</button>)}
@@ -468,8 +690,8 @@ export default function PartySetupPage() {
             <div className="reserve-panel__head"><div><p className="eyebrow">Flexible bench</p><h2><Crown size={19} /> Reserve <span>{guildState.reserveMemberIds.length}</span></h2></div><small>No party capacity</small></div>
             <div className="reserve-members">{guildState.members.filter((member) => guildState.reserveMemberIds.includes(member.id)).map((member) => <DraggableMember compact key={member.id} member={member} onSelect={setSelectedMember} />)}{guildState.reserveMemberIds.length === 0 && <p className="empty-list">Drop members here to keep them ready.</p>}</div>
           </DroppableArea>
-          <div className="workspace-footer"><button type="button" onClick={() => { setGuildState((current) => resetGuildState(current.members)); announce("Party assignments reset."); }}><RotateCcw size={16} />Reset Party Setup</button></div>
-        </section>
+          <div className="workspace-footer"><button type="button" onClick={() => { setGuildState((current) => resetGuildState(current)); announce("Party assignments reset."); }}><RotateCcw size={16} />Reset Party Setup</button></div>
+        </section> : <section className="workspace auction-workspace" id="auction"><AuctionBoard pages={guildState.auctionPages} members={guildState.members} onCreatePage={addAuctionPage} onDeletePage={removeAuctionPage} onClearAuction={clearAuction} onRenameItem={renameAuctionItem} onAddBidder={addAuctionBidder} onRemoveBidder={removeAuctionBidder} onEliminateBidder={eliminateAuctionBidder} /></section>}
         {databaseMessage && <p className="database-notice" role="status">{databaseMessage}</p>}
         {toast && <p className="toast" role="status">{toast}</p>}
       </main>

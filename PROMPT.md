@@ -168,6 +168,30 @@ Without Supabase, persist state locally. When Supabase is configured, load and
 save the shared guild state there as the source of truth; do not restore or
 re-upload a stale local browser roster.
 
+Add an **Auction** navigation section for Guild League items. An auction page
+has exactly four item rows. Each row has an editable item name and a bidder list
+made from the existing guild-member roster. A member may be recorded as a bidder
+on more than one item. When an item has two or more bidders, provide a visible
+elimination wheel. Each spin removes the selected bidder, then the next spin
+uses only the remaining members; the final person left is saved as winner.
+Use Spin to remove to open the draw popup first; the coordinator starts the
+actual draw with a Spin the wheel action inside that popup. Keep it open
+between eliminations with a Spin again action, and provide an explicit × close
+button that cancels the current draw.
+Changing bidders resets the draw. Do not add bid prices, payments, or external
+auction integration.
+Provide a confirmed Clear auction action that resets the full Auction board to
+one empty default Page 1, removing all other pages, item names, bidders, and winners.
+Provide a confirmed Delete page action while keeping at least one Auction page.
+The winner wheel should open as a large, exciting pop-up draw rather than spin
+only inside the item row. Give each bidder a visible colored wheel slice with
+their name, and make the pointer stop on the selected eliminated member's slice.
+Land the pointer at a random safe point inside that slice rather than always at
+the slice center.
+The wheel must be large enough to read full names, have a slower physical-style
+deceleration, and show only the final winner instead of repeating every name
+below the wheel.
+
 Provide an **Import members** action for `.xlsx` and `.csv` roster
 files. Require Character Name/Name and Class/Job columns, preview the valid
 rows before confirmation, and append only non-duplicate character names. An

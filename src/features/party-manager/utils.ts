@@ -1,8 +1,24 @@
 import { DEFAULT_PARTY_CAPACITY } from "@/features/party-manager/constants";
-import type { Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
+import type { AuctionItem, AuctionPage, Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
 
 export function createEmptyGuildState(): GuildState {
-  return { members: [], parties: [], reserveMemberIds: [] };
+  return { members: [], parties: [], reserveMemberIds: [], auctionPages: [createAuctionPage("auction-page-1", "Page 1")] };
+}
+
+export function createAuctionPage(id: string, name: string): AuctionPage {
+  return {
+    id,
+    name,
+    items: Array.from({ length: 4 }, (_, index) => ({ id: `${id}-item-${index + 1}`, name: `Item ${index + 1}`, bidderMemberIds: [] })),
+  };
+}
+
+export function clearAuctionPages(): AuctionPage[] {
+  return [createAuctionPage("auction-page-1", "Page 1")];
+}
+
+export function deleteAuctionPage(pages: AuctionPage[], pageId: string): AuctionPage[] {
+  return pages.length > 1 ? pages.filter((page) => page.id !== pageId) : pages;
 }
 
 export function normalizeGuildState(state: GuildState, members: GuildMember[] = state.members): GuildState {
@@ -17,7 +33,32 @@ export function normalizeGuildState(state: GuildState, members: GuildMember[] = 
   const reserveMemberIds = state.reserveMemberIds.filter(
     (id) => validIds.has(id) && !assignedIds.has(id) && (assignedIds.add(id), true),
   );
-  return { members: normalizedMembers, parties, reserveMemberIds };
+  const auctionPages = normalizeAuctionPages(state.auctionPages, validIds);
+  return { members: normalizedMembers, parties, reserveMemberIds, auctionPages };
+}
+
+function normalizeAuctionPages(pages: AuctionPage[], validMemberIds: Set<string>): AuctionPage[] {
+  const normalized = pages.map((page, pageIndex) => ({
+    id: page.id.trim() || `auction-page-${pageIndex + 1}`,
+    name: page.name.trim() || `Page ${pageIndex + 1}`,
+    items: page.items.slice(0, 4).map((item, itemIndex): AuctionItem => {
+      const bidderMemberIds = [...new Set(item.bidderMemberIds.filter((memberId) => validMemberIds.has(memberId)))];
+      const eliminatedBidderMemberIds = [...new Set((item.eliminatedBidderMemberIds ?? []).filter((memberId) => bidderMemberIds.includes(memberId)))];
+      const remainingBidderIds = bidderMemberIds.filter((memberId) => !eliminatedBidderMemberIds.includes(memberId));
+      return {
+        id: item.id.trim() || `${page.id || `auction-page-${pageIndex + 1}`}-item-${itemIndex + 1}`,
+        name: item.name.trim() || `Item ${itemIndex + 1}`,
+        bidderMemberIds,
+        eliminatedBidderMemberIds,
+        winnerMemberId: remainingBidderIds.length === 1 && item.winnerMemberId === remainingBidderIds[0] ? item.winnerMemberId : undefined,
+      };
+    }),
+  }));
+  const completePages = normalized.map((page) => ({
+    ...page,
+    items: [...page.items, ...createAuctionPage(page.id, page.name).items.slice(page.items.length)],
+  }));
+  return completePages.length > 0 ? completePages : [createAuctionPage("auction-page-1", "Page 1")];
 }
 
 export function getUnassignedMembers(state: GuildState, members: GuildMember[]): GuildMember[] {
@@ -42,6 +83,7 @@ export function moveMember(
     members: state.members,
     parties: state.parties.map((party) => ({ ...party, memberIds: party.memberIds.filter((id) => id !== memberId) })),
     reserveMemberIds: state.reserveMemberIds.filter((id) => id !== memberId),
+    auctionPages: state.auctionPages,
   };
 
   if (destination.type === "party") {

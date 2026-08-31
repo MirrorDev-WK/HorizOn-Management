@@ -15,10 +15,25 @@ export type Party = {
   memberIds: string[];
 };
 
+export type AuctionItem = {
+  id: string;
+  name: string;
+  bidderMemberIds: string[];
+  eliminatedBidderMemberIds?: string[];
+  winnerMemberId?: string;
+};
+
+export type AuctionPage = {
+  id: string;
+  name: string;
+  items: AuctionItem[];
+};
+
 export type GuildState = {
   members: GuildMember[];
   parties: Party[];
   reserveMemberIds: string[];
+  auctionPages: AuctionPage[];
 };
 
 export type Destination =

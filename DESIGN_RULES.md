@@ -182,6 +182,31 @@ Show In voice, Away, and Not linked members together; the static status badge
 communicates attendance without hiding anyone. Do not delete or alter members
 because of their voice status.
 
+## Auction Board
+
+Auction is a dedicated navigation view with compact page tabs. Each auction page
+uses exactly four stacked item rows. Place the item name at the left, a roster
+member picker and Add bidder action at the right, and show bidder names as
+removable chips below. Show the elimination wheel only for rows with at least
+two bidders. Each spin marks the landed bidder Out, removes them from the next
+wheel, and saves a winner only when one bidder remains. Keep the same popup open
+for every Spin again round. The item-row action opens this popup; the actual
+spin begins only from its clear Spin the wheel control. Include an explicit ×
+button at the popup's top-right so a coordinator can cancel and close it. Reuse the dark-green
+card system and keep the
+controls fully usable at 360px. Clear auction is a secondary, destructive-style
+action with a confirmation; it resets the board to one empty default Page 1.
+Delete page is only available when more than one page exists. The winner draw
+opens in a focused pop-up with a large gold wheel, pointer, and a clear Out or
+final winner reveal so the group can enjoy the result together. The wheel must
+have a distinct colored slice for every bidder, with the bidder's name printed
+on that slice and the pointer stopping on the eliminated slice. Generate colors
+per bidder rather than recycling a short fixed palette. Make this draw the
+focus: use a large wheel, full slice names, a long decelerating spin, and show
+the exact Out result below it. The pointer should land at varied safe positions
+inside slices, not their mathematical centers. Keep the central hub small so it
+never obscures a bidder name.
+
 ## Class Visuals
 
 Use original placeholders/icons.

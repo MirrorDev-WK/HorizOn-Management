@@ -14,6 +14,12 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - Discord voice attendance is now approved. A separate server-side bot must link Discord users to characters and update only the configured main voice channel's presence; general Discord integration remains out of scope.
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
+- Auction is a shared Guild League board stored in the same Supabase guild state. Every auction page has four item rows, and each row records roster members who want to bid. When a row has two or more bidders, an elimination wheel removes one selected member per spin; the final member left is saved as winner. Changing bidders resets that draw. Bid price and payment logic are out of scope.
+- Clear auction is confirmed before it resets the entire board to one empty default Page 1, removing all other pages, item names, bidder lists, and winners.
+- An Auction page may be deleted only when at least one other page remains. Elimination spins use a large, focused pop-up draw with one colored, named slice per remaining bidder; the pointer visually stops on the removed bidder's slice.
+- Wheel slice colors are generated per bidder instead of using a fixed short palette, so larger draws retain visually distinct slices.
+- The draw now prioritizes suspense and readable names: a larger wheel runs for about five seconds with staged deceleration, displays full member names on slices, hides the redundant contender list, and reveals only the final winner.
+- The elimination modal remains open after an Out result; the coordinator clicks Spin again inside that same modal until the final winner is revealed.
 - No generated class PNG assets are currently integrated. Original transparent class-image generation is pending; use the current class-specific Lucide icons until that work resumes.
 
 ## Party Management Behavior
@@ -152,6 +158,65 @@ npm run build
 
 ## Latest Completed Change
 
+- Reduced the decorative center hub of the Auction wheel so the center no longer covers bidder labels on narrow slices.
+- Verified with `npm run lint` and `npm run build`.
+
+## Latest Completed Change
+
+- Changed Auction draw control flow: **Spin to remove** opens the large wheel popup without starting the draw, and **Spin the wheel** inside the popup begins it. The popup now has an explicit × close button that cancels the current draw.
+- Verified with `npm run lint` and `npm run build`.
+
+## Latest Completed Change
+
+- Updated the Auction elimination wheel so its selected Out bidder stops at a varied safe point inside that bidder's slice, rather than exactly in the center below the pointer.
+- The final round now explicitly shows both outcomes: the bidder under the pointer is Out, and the last remaining bidder wins the item.
+- Verified with `npm run test:state` (11 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added a confirmed **Clear auction** action. It retains Auction pages but resets their four item rows to empty defaults, clearing bids and winners in the shared state.
+
+## Latest Completed Change
+
+- Added a confirmed **Delete page** action for Auction. It is disabled when only one page remains, so the Auction view always has a usable page.
+- Reworked the random winner draw into a full-screen modal with a large spinning wheel, pointer, contender names, and a saved winner reveal.
+- Verified with `npm run test:state` (10 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Refined the winner draw to a true roulette wheel: each bidder has a separate colored, named slice, and the calculated spin ends with the pointer on the saved winner's slice.
+- Verified with `npm run test:state` (10 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Replaced the fixed eight-color wheel palette with generated per-bidder colors, so larger draws do not reuse the first few slice colors.
+- Verified with `npm run test:state` (10 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Enlarged the Auction draw wheel, removed the redundant contender list, and shows the final winner only after the draw completes.
+- The wheel now makes 8–10 full turns over about five seconds using staged deceleration, while still ending exactly on the chosen winner's slice. Full member names are compressed to fit their slices rather than truncated.
+- Verified with `npm run test:state` (10 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Reviewed the Wheel of Names reference and changed the draw to one continuous 7-second ease-out spin, rather than several staged speed changes. The draw now makes 10–13 full rotations and the wheel is wider on desktop, while preserving the exact landing slice.
+- Verified with `npm run test:state` (10 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Changed Auction selection to an elimination draw. Every spin removes the named slice under the pointer, marks that bidder Out, and excludes them from the next spin; the final remaining bidder is saved as the winner.
+- Adding or removing a bidder resets the elimination draw. Existing direct-winner results reset safely under the new rule.
+- Verified with `npm run test:state` (11 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Replaced the wheel's CSS keyframe animation with a direct SVG browser animation. Its rotation origin is locked to the wheel center, while the pointer stays fixed, for a smooth continuous spin and exact final slice alignment.
+- Each spin now lands at a random safe point inside the eliminated bidder's slice instead of its exact center. The final result explicitly names the Out bidder under the pointer and the last remaining winner.
+- Verified with `npm run test:state` (11 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
 - Changed Unassigned to show every member who is not in a party or Reserve. Discord attendance no longer hides Away or Not linked members; the card badge communicates their status instead.
 - Added [`supabase/clear-guild-data.sql`](supabase/clear-guild-data.sql), a manual, destructive Supabase reset for the complete shared guild state and Discord attendance data. It includes a warning to stop the bot and close stale browser tabs first.
 - Verified the Unassigned-state behavior with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
@@ -161,3 +226,22 @@ npm run build
 - Made configured Supabase projects remote-first: the website loads the roster and party state exclusively from Supabase and saves changes there. It no longer restores or re-uploads an old browser localStorage roster when Supabase is configured.
 - localStorage remains available only when no Supabase configuration is present. A new configured Supabase project begins with an empty shared state.
 - Verified with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added the **Auction** navigation view for Guild League. Auction pages are stored in the shared guild state; every page has exactly four item rows, each with an item name and a roster-member bidder list.
+- Members may bid on multiple items. When two or more members bid on one item, the coordinator can spin the random winner wheel; its saved result resets if the bidder list changes. Bid prices and payment logic remain intentionally out of scope.
+- Added page tabs and a New page action, plus mobile navigation between Party and Auction.
+- Verified with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added a gold random winner wheel to each Auction item with two or more bidders. Spinning chooses one current bidder and saves the winner to the shared guild state.
+- Adding or removing any bidder clears the saved winner, so the result always matches the current bidder list.
+- Verified with `npm run test:state` (8 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Clear auction now replaces every Auction page with one clean default **Page 1** containing four empty items. It no longer preserves the previous page tabs.
+- The Auction view automatically selects the replacement Page 1 after the reset.
+- Verified with `npm run test:state`, `npm run lint`, and `npm run build`.
