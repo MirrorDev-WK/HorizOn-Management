@@ -5,4 +5,6 @@ export const RAGNAROK_NEW_WORLD_CLASS_GROUPS = [
   { label: "Current advancements", jobs: ["Knight", "Wizard", "Hunter", "Priest", "Assassin", "Blacksmith"] },
 ] as const;
 
-export const RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT = RAGNAROK_NEW_WORLD_CLASS_GROUPS.reduce((count, group) => count + group.jobs.length, 0);
+export const RAGNAROK_NEW_WORLD_CLASSES = RAGNAROK_NEW_WORLD_CLASS_GROUPS.flatMap((group) => group.jobs);
+
+export const RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT = RAGNAROK_NEW_WORLD_CLASSES.length;

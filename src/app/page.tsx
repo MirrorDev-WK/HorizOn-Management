@@ -37,7 +37,7 @@ import type { AuctionPage, Destination, GuildMember, GuildState, Party } from "@
 import { clearAuctionPages, createAuctionPage, createEmptyGuildState, deleteAuctionPage, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
 import { loadGuildState, resetGuildState, saveGuildState } from "@/lib/storage";
 import { readMemberImportFile, type ImportedMember, type MemberImportResult } from "@/lib/member-import";
-import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance } from "@/lib/supabase";
+import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance, subscribeToSharedGuildState } from "@/lib/supabase";
 
 type DropId = `party:${string}` | `member:${string}:${string}` | "reserve" | "unassigned";
 type NewMemberInput = Pick<GuildMember, "name" | "className" | "cp">;
@@ -424,7 +424,13 @@ export default function PartySetupPage() {
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState("");
   const [databaseMessage, setDatabaseMessage] = useState("");
+  const latestGuildStateRef = useRef(guildState);
+  const skipNextSharedStateSaveRef = useRef(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  useEffect(() => {
+    latestGuildStateRef.current = guildState;
+  }, [guildState]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -463,6 +469,10 @@ export default function PartySetupPage() {
   useEffect(() => {
     if (!isReady) return;
     if (isSupabaseConfigured()) {
+      if (skipNextSharedStateSaveRef.current) {
+        skipNextSharedStateSaveRef.current = false;
+        return;
+      }
       void saveSharedGuildState(guildState).then((error) => {
         if (error) setDatabaseMessage("Shared database is unavailable. Changes could not be saved.");
         else setDatabaseMessage("");
@@ -479,10 +489,33 @@ export default function PartySetupPage() {
       void (async () => {
         const result = await loadDiscordVoiceAttendance();
         if (!isCurrent || result.error) return;
-        setGuildState((current) => mergeDiscordVoiceAttendance(current, result.attendance));
+        const nextState = mergeDiscordVoiceAttendance(latestGuildStateRef.current, result.attendance);
+        if (JSON.stringify(nextState) === JSON.stringify(latestGuildStateRef.current)) return;
+        skipNextSharedStateSaveRef.current = true;
+        setGuildState(nextState);
       })();
     };
     const unsubscribe = subscribeToDiscordVoiceAttendance(refreshAttendance);
+    return () => {
+      isCurrent = false;
+      unsubscribe();
+    };
+  }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady || !isSupabaseConfigured()) return;
+    let isCurrent = true;
+    const refreshSharedState = () => {
+      void (async () => {
+        const [shared, attendance] = await Promise.all([loadSharedGuildState(), loadDiscordVoiceAttendance()]);
+        if (!isCurrent || shared.error || !shared.state) return;
+        const nextState = attendance.error ? shared.state : mergeDiscordVoiceAttendance(shared.state, attendance.attendance);
+        if (JSON.stringify(nextState) === JSON.stringify(latestGuildStateRef.current)) return;
+        skipNextSharedStateSaveRef.current = true;
+        setGuildState(nextState);
+      })();
+    };
+    const unsubscribe = subscribeToSharedGuildState(refreshSharedState);
     return () => {
       isCurrent = false;
       unsubscribe();

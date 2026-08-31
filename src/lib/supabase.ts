@@ -43,6 +43,24 @@ export async function saveSharedGuildState(state: GuildState): Promise<string | 
   return error?.message ?? null;
 }
 
+export function subscribeToSharedGuildState(onChange: () => void): () => void {
+  const supabase = getBrowserClient();
+  if (!supabase) return () => undefined;
+
+  const channel = supabase
+    .channel("horizon-shared-guild-state")
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "guild_states", filter: `id=eq.${GUILD_STATE_ID}` },
+      onChange,
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
 export async function loadDiscordVoiceAttendance(): Promise<{ attendance: DiscordVoiceAttendance[]; error?: string }> {
   const supabase = getBrowserClient();
   if (!supabase) return { attendance: [] };

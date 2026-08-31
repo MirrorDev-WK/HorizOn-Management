@@ -193,9 +193,9 @@ as Not linked.
 
 ### Enable Discord voice attendance
 
-The bot is intentionally separate from the website. It links a Discord account
-to one character through leader-only `/link` and updates the main voice-channel
-presence. Add these server-only values to `.env.local` (never use `NEXT_PUBLIC_`
+The bot is intentionally separate from the website. It can let a guild member
+register one character through class-text buttons and a name form, and it updates
+the main voice-channel presence. Add these server-only values to `.env.local` (never use `NEXT_PUBLIC_`
 for them):
 
 ```env
@@ -213,10 +213,20 @@ If you ran an earlier version of the Discord schema, run
 Supabase SQL Editor, then restart the bot. The dashboard will update as members
 join or leave the configured voice channel; no page refresh is needed.
 
+For Discord self-registration, also run
+[`supabase/discord-registration.sql`](supabase/discord-registration.sql) once
+in the Supabase SQL Editor, then restart `npm run discord:bot`. In the Discord
+text channel where you want registrations, a server manager runs
+`/setup-registration`. The bot posts text class badges; a member clicks their
+class, enters their exact in-game character name, and the bot automatically
+creates the roster member and Discord link. The website receives the new member
+through Supabase Realtime without a refresh.
+
 In Supabase, copy the **Secret key** from **Settings → API Keys** into
 `SUPABASE_SERVICE_ROLE_KEY`. Never put that key in code, `NEXT_PUBLIC_` variables,
-or a message. Only Discord users with **Manage Server** can use `/link` and
-`/unlink` to map a Discord account to an exact HorizOn character name.
+or a message. Only Discord users with **Manage Server** can run
+`/setup-registration`, `/link`, and `/unlink`. Every guild member may use the
+buttons posted by `/setup-registration` to register one new character.
 
 ### Bulk-link Discord members from Excel
 

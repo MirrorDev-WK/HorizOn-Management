@@ -177,6 +177,11 @@ Away means outside the configured main voice channel, not necessarily offline
 on Discord. The dashboard updates the status live without a page refresh, but only the
 server-side bot may change it.
 
+Discord self-registration is deliberately text-first: a manager posts compact
+class-name buttons, then the member enters a character name in Discord's native
+form. Do not require game-class emojis or assign Discord server roles; the
+selected class is saved only as the HorizOn character class.
+
 The Unassigned pool is the complete derived list of unassigned guild members.
 Show In voice, Away, and Not linked members together; the static status badge
 communicates attendance without hiding anyone. Do not delete or alter members

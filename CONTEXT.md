@@ -11,7 +11,7 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - Real guild members can be added with name, class, and optional CP. They persist with party state and begin Unassigned; Reset Party Setup must not remove them.
 - Add Member uses a mobile-friendly dropdown of the 14 current Ragnarok: The New World job names: eight launch classes and six current advancements. Other/custom remains available for future classes.
 - Roster import accepts a user-selected `.xlsx` or `.csv` file with Character Name/Name and Class/Job columns. It previews valid rows, appends only non-duplicate names, and persists through the same configured source as manual member additions (Supabase when configured).
-- Discord voice attendance is now approved. A separate server-side bot must link Discord users to characters and update only the configured main voice channel's presence; general Discord integration remains out of scope.
+- Discord voice attendance and text-button self-registration are approved. A separate server-side bot may create one roster character and Discord link after a member selects a class and enters their in-game name, and it updates only the configured main voice channel's presence; general Discord integration remains out of scope.
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
 - Auction is a shared Guild League board stored in the same Supabase guild state. Every auction page has four item rows, and each row records roster members who want to bid. When a row has two or more bidders, an elimination wheel removes one selected member per spin; the final member left is saved as winner. Changing bidders resets that draw. Bid price and payment logic are out of scope.
@@ -245,3 +245,10 @@ npm run build
 - Clear auction now replaces every Auction page with one clean default **Page 1** containing four empty items. It no longer preserves the previous page tabs.
 - The Auction view automatically selects the replacement Page 1 after the reset.
 - Verified with `npm run test:state`, `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added Discord self-registration: a server manager runs `/setup-registration`, members select a text class button, then enter their in-game character name in a Discord modal. The bot creates the roster member, Discord link, and initial safe Away status in one server-only Supabase operation.
+- Added [`supabase/discord-registration.sql`](supabase/discord-registration.sql) for existing projects. It also enables Realtime events for shared guild-state updates, so open dashboards receive newly registered members without a refresh.
+- The existing `/link` and `/unlink` manager tools remain available for manual corrections.
+- Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.

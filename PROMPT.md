@@ -30,8 +30,10 @@ The leader must be able to:
 - localStorage
 
 Use Supabase for shared state and the approved Discord voice-attendance tables.
-Implement only the Discord bot needed for linked member voice-channel checks;
-do not introduce authentication, general Discord features, Redux, or enterprise architecture.
+Implement only the Discord bot needed for linked member voice-channel checks and
+the approved self-registration flow: class-text button, character-name form,
+automatic roster creation, and Discord link. Do not introduce authentication,
+general Discord features, Redux, or enterprise architecture.
 
 ## Member Model
 
@@ -50,6 +52,9 @@ export type GuildMember = {
 
 CP is display-only manual data. A separate server-side bot links Discord users
 to characters and tracks only their presence in the configured main voice channel.
+In Discord, a manager can post the registration panel; members choose a text
+class badge and enter a character name. The bot creates exactly one linked
+character for that Discord account and adds it to the shared roster.
 The browser must subscribe to the safe voice-status table with Supabase Realtime,
 so attendance changes appear without polling or a page refresh.
 
