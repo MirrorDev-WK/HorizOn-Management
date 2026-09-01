@@ -75,6 +75,13 @@ nav { margin-top:50px; }.nav-item { display:flex; align-items:center; gap:11px; 
 
 /* Wheel labels stay readable without dominating their slice. */
 .wheel-slice text { font-weight:700; letter-spacing:.1px; stroke-width:1.4px; }
+
+/* Desktop roster stays inside the viewport; only its member list scrolls. */
+@media (min-width:900px) {
+  .member-pool { height:100vh; overflow:hidden; }
+  .unassigned-zone { min-height:0; height:0; flex:1; overflow:hidden; }
+  .unassigned-zone .member-list { min-height:0; flex:1; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; }
+}
 .auction-bidders { min-height:24px; margin-top:9px; }
 .auction-bidder { min-height:25px; padding:0 6px; }
 .auction-wheel-row { margin-top:9px; padding-top:9px; }

@@ -322,3 +322,8 @@ npm run build
 
 - Auction’s bidder dropdown now closes when the coordinator clicks outside its search and results area.
 - Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Fixed desktop Unassigned roster overflow. The left roster remains within the viewport and its member list scrolls independently when there are many members.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
