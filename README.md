@@ -13,7 +13,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 ## MVP Features
 
 - Guild member list
-- Add guild members with name, a Ragnarok: The New World job dropdown, and optional CP
+- Add guild members with name, a 20-option Ragnarok: The New World job dropdown, and optional CP
 - Import a roster from an Excel or CSV file with Character Name and Class columns
 - Create, rename, and delete parties
 - Assign members to parties
@@ -25,6 +25,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 - Mobile tap-to-assign flow
 - Desktop drag and drop
 - Search members by character/class
+- Clear class-specific symbol icons on member cards, including all 12 advanced jobs
 - Manual CP display
 - Discord main-voice attendance for linked members
 - Guild attendance totals for in voice, linked-away, and not-linked members
@@ -225,7 +226,9 @@ through Supabase Realtime without a refresh.
 In Supabase, copy the **Secret key** from **Settings → API Keys** into
 `SUPABASE_SERVICE_ROLE_KEY`. Never put that key in code, `NEXT_PUBLIC_` variables,
 or a message. Only Discord users with **Manage Server** can run
-`/setup-registration`, `/link`, and `/unlink`. Every guild member may use the
+`/setup-registration`, `/link`, and `/unlink`. `/unlink` permanently deletes
+the selected character from the shared roster (including its party, reserve,
+auction references, and Discord link). Every guild member may use the
 buttons posted by `/setup-registration` to register one new character.
 
 ### Bulk-link Discord members from Excel

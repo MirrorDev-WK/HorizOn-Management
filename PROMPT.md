@@ -55,6 +55,9 @@ to characters and tracks only their presence in the configured main voice channe
 In Discord, a manager can post the registration panel; members choose a text
 class badge and enter a character name. The bot creates exactly one linked
 character for that Discord account and adds it to the shared roster.
+A manager's `/unlink` command permanently removes that selected character from
+the shared roster and its Discord link, including any party, Reserve, and
+auction references, so duplicate characters are not left behind.
 The browser must subscribe to the safe voice-status table with Supabase Realtime,
 so attendance changes appear without polling or a page refresh.
 
@@ -166,8 +169,9 @@ reserve, and Unassigned state; this is a display filter, not a deletion rule.
 Provide an **Add Member** action with required character name, a **Ragnarok: The
 New World** job dropdown, and optional manual CP. Include its eight launch
 classes (Swordsman, Mage, Archer, Acolyte, Thief, Merchant, Gunslinger, and
-Druid) plus the six current second-job advancements (Knight, Wizard, Hunter,
-Priest, Assassin, and Blacksmith). Retain an **Other / custom class** choice for
+Druid) plus the twelve advanced classes (Lord Knight, Paladin, Sniper, Bard,
+Dancer, High Wizard, Sage, High Priest, Champion, Assassin Cross, Whitesmith,
+and Night Walker). Retain an **Other / custom class** choice for
 future server-specific jobs. New members begin Unassigned and Not linked.
 Without Supabase, persist state locally. When Supabase is configured, load and
 save the shared guild state there as the source of truth; do not restore or
@@ -209,10 +213,16 @@ Class columns must continue to work and create Not linked members.
 Each compact card contains:
 
 ```text
-[Class Icon] Character Name
+[Illustrated Class Emblem] Character Name
              Class Name
              CP
 ```
+
+Use clear, original code-native class symbols for the supported 20 Ragnarok: The
+New World classes. Symbols must be immediately readable at card size and must
+not copy official game icons. Retain a simple fallback symbol for an Other/custom
+class. Use restrained class-family colors: martial red, magic blue, holy gold,
+ranged/nature green, craft orange, shadow purple, and performance pink.
 
 Support search by character name and class.
 

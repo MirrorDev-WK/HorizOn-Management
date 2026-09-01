@@ -106,9 +106,9 @@ test("swapping positions only changes the order within one party", () => {
   assert.deepEqual(result.state.parties[1].memberIds, []);
 });
 
-test("the Add Member dropdown contains 14 distinct Ragnarok The New World jobs", () => {
+test("the Add Member dropdown contains 20 distinct Ragnarok The New World jobs", () => {
   const jobs = RAGNAROK_NEW_WORLD_CLASS_GROUPS.flatMap((group) => group.jobs);
-  assert.equal(RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT, 14);
+  assert.equal(RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT, 20);
   assert.equal(new Set(jobs).size, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT);
 });
 

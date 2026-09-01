@@ -47,7 +47,7 @@ const commands = [
     .addStringOption((option) => option.setName("character").setDescription("Exact character name in HorizOn").setRequired(true)),
   new SlashCommandBuilder()
     .setName("unlink")
-    .setDescription("Remove a Discord link from a HorizOn character")
+    .setDescription("Delete a HorizOn character and its Discord link")
     .addStringOption((option) => option.setName("character").setDescription("Exact character name in HorizOn").setRequired(true)),
   new SlashCommandBuilder()
     .setName("setup-registration")
@@ -139,9 +139,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     await interaction.deferReply({ ephemeral: true });
     if (interaction.commandName === "unlink") {
-      const { error } = await supabase.from("discord_member_links").delete().eq("member_id", member.id);
+      const { error } = await supabase.rpc("unlink_and_delete_discord_member", { p_member_id: member.id });
       if (error) throw error;
-      await interaction.editReply(`${member.name} is no longer linked to Discord.`);
+      await interaction.editReply(`Deleted **${member.name}** from the HorizOn roster and removed its Discord link.`);
       return;
     }
 

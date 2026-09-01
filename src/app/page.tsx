@@ -3,12 +3,14 @@
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import {
+  Axe,
   ArrowDownUp,
   BookOpen,
   ChevronDown,
   Cross,
   Crosshair,
   Crown,
+  Coins,
   Drama,
   EyeOff,
   FileUp,
@@ -17,12 +19,15 @@ import {
   Hand,
   Headphones,
   Menu,
+  Moon,
   Music2,
   Plus,
   RotateCcw,
   Search,
   ShieldCheck,
+  Shield,
   Sparkles,
+  Sprout,
   Sword,
   Swords,
   Trash2,
@@ -48,23 +53,80 @@ const CUSTOM_CLASS_VALUE = "__custom_class__";
 const WHEEL_DRAW_DURATION_MS = 7000;
 
 const classIcons: Record<string, LucideIcon> = {
-  Paladin: ShieldCheck,
-  "High Wizard": WandSparkles,
-  "Assassin Cross": Swords,
-  "High Priest": Cross,
-  "Lord Knight": Sword,
+  Gunslinger: Crosshair,
+  Thief: EyeOff,
+  Merchant: Coins,
+  Archer: Crosshair,
+  Swordsman: Sword,
+  Mage: WandSparkles,
+  Acolyte: Cross,
+  Druid: Sprout,
+  "Lord Knight": ShieldCheck,
+  Paladin: Shield,
   Sniper: Crosshair,
-  Clown: Music2,
+  Bard: Music2,
   Dancer: Drama,
+  "High Wizard": WandSparkles,
+  Sage: BookOpen,
+  "High Priest": Cross,
   Champion: Hand,
-  Professor: BookOpen,
+  "Assassin Cross": Swords,
   Whitesmith: Hammer,
+  "Night Walker": Moon,
+  Knight: ShieldCheck,
+  Wizard: WandSparkles,
+  Hunter: Crosshair,
+  Priest: Cross,
+  Assassin: Swords,
+  Blacksmith: Hammer,
+  Clown: Music2,
+  Professor: BookOpen,
   Stalker: EyeOff,
   Creator: FlaskConical,
 };
 
+type ClassTone = "martial" | "magic" | "holy" | "ranged" | "craft" | "shadow" | "performance";
+
+const classTones: Record<string, ClassTone> = {
+  Gunslinger: "craft",
+  Thief: "shadow",
+  Merchant: "craft",
+  Archer: "ranged",
+  Swordsman: "martial",
+  Mage: "magic",
+  Acolyte: "holy",
+  Druid: "ranged",
+  "Lord Knight": "martial",
+  Paladin: "holy",
+  Sniper: "ranged",
+  Bard: "performance",
+  Dancer: "performance",
+  "High Wizard": "magic",
+  Sage: "magic",
+  "High Priest": "holy",
+  Champion: "martial",
+  "Assassin Cross": "shadow",
+  Whitesmith: "craft",
+  "Night Walker": "shadow",
+  Knight: "martial",
+  Wizard: "magic",
+  Hunter: "ranged",
+  Priest: "holy",
+  Assassin: "shadow",
+  Blacksmith: "craft",
+  Clown: "performance",
+  Professor: "magic",
+  Stalker: "shadow",
+  Creator: "craft",
+};
+
 function getClassIcon(className: string): LucideIcon {
   return classIcons[className] ?? Swords;
+}
+
+function ClassGlyph({ className, compact = false }: { className: string; compact?: boolean }) {
+  const tone = classTones[className] ?? "martial";
+  return <span className={`class-glyph class-glyph--${tone}`} aria-hidden="true">{createElement(getClassIcon(className), { size: compact ? 16 : 20 })}</span>;
 }
 
 function formatCp(cp: number | undefined): string | null {
@@ -101,7 +163,7 @@ function DraggableMember({ member, onSelect, compact = false }: { member: GuildM
         {...listeners}
         {...attributes}
       >
-        <span className="class-glyph" aria-hidden="true">{createElement(getClassIcon(member.className), { size: compact ? 16 : 20 })}</span>
+        <ClassGlyph className={member.className} compact={compact} />
         <span className="member-card__copy">
           <strong>{member.name}</strong>
           <span>{member.className}</span>
@@ -114,7 +176,7 @@ function DraggableMember({ member, onSelect, compact = false }: { member: GuildM
 }
 
 function DragPreview({ member }: { member: GuildMember }) {
-  return <div className="member-card member-card--compact drag-preview"><span className="class-glyph">{createElement(getClassIcon(member.className), { size: 16 })}</span><span className="member-card__copy"><strong>{member.name}</strong><span>{member.className}</span></span></div>;
+  return <div className="member-card member-card--compact drag-preview"><ClassGlyph className={member.className} compact /><span className="member-card__copy"><strong>{member.name}</strong><span>{member.className}</span></span></div>;
 }
 
 function DroppableArea({ id, children, className = "" }: { id: DropId; children: React.ReactNode; className?: string }) {

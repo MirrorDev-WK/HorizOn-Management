@@ -6,10 +6,10 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 
 - The app is a single-guild Next.js app. Without Supabase it uses localStorage; once Supabase is configured, Supabase is the sole shared roster and party-state source of truth. Never commit its credentials.
 - Member cards show **name**, **class name**, and optional manual **CP** only. Tank/DPS/Healer/Support labels and role filters are intentionally removed.
-- Each class has a dedicated original UI icon drawn from the Lucide icon set; these replace the previous generic sword icon.
+- Supported classes use dedicated, simple code-native UI symbols; a general fallback icon remains for custom classes.
 - CP is display-only; there is no CP syncing or external API.
 - Real guild members can be added with name, class, and optional CP. They persist with party state and begin Unassigned; Reset Party Setup must not remove them.
-- Add Member uses a mobile-friendly dropdown of the 14 current Ragnarok: The New World job names: eight launch classes and six current advancements. Other/custom remains available for future classes.
+- Add Member uses a mobile-friendly dropdown of 20 Ragnarok: The New World job names: eight launch classes and twelve advanced classes. Other/custom remains available for future classes.
 - Roster import accepts a user-selected `.xlsx` or `.csv` file with Character Name/Name and Class/Job columns. It previews valid rows, appends only non-duplicate names, and persists through the same configured source as manual member additions (Supabase when configured).
 - Discord voice attendance and text-button self-registration are approved. A separate server-side bot may create one roster character and Discord link after a member selects a class and enters their in-game name, and it updates only the configured main voice channel's presence; general Discord integration remains out of scope.
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
@@ -20,7 +20,7 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - Wheel slice colors are generated per bidder instead of using a fixed short palette, so larger draws retain visually distinct slices.
 - The draw now prioritizes suspense and readable names: a larger wheel runs for about five seconds with staged deceleration, displays full member names on slices, hides the redundant contender list, and reveals only the final winner.
 - The elimination modal remains open after an Out result; the coordinator clicks Spin again inside that same modal until the final winner is revealed.
-- No generated class PNG assets are currently integrated. Original transparent class-image generation is pending; use the current class-specific Lucide icons until that work resumes.
+- The 20 supported class choices use simple, immediately recognizable code-native symbols. Custom classes retain a Lucide fallback.
 
 ## Party Management Behavior
 
@@ -89,8 +89,8 @@ npm run build
 
 ## Latest Completed Change
 
-- Corrected the Add Member dropdown to **Ragnarok: The New World**: its eight launch classes (Swordsman, Mage, Archer, Acolyte, Thief, Merchant, Gunslinger, Druid) and six current advancements (Knight, Wizard, Hunter, Priest, Assassin, Blacksmith).
-- The dropdown now shows 14 current job names, grouped by launch class and advancement, plus Other/custom for future additions.
+- Corrected the Add Member dropdown to **Ragnarok: The New World**: its eight launch classes (Swordsman, Mage, Archer, Acolyte, Thief, Merchant, Gunslinger, Druid) and twelve advanced classes (Lord Knight, Paladin, Sniper, Bard, Dancer, High Wizard, Sage, High Priest, Champion, Assassin Cross, Whitesmith, Night Walker).
+- The dropdown now shows 20 job names, grouped by launch class and advanced class, plus Other/custom for future additions.
 - Verified with `npm run lint`, `npm run test:state` (6 passing tests), and `npm run build`.
 
 ## Latest Completed Change
@@ -250,5 +250,33 @@ npm run build
 
 - Added Discord self-registration: a server manager runs `/setup-registration`, members select a text class button, then enter their in-game character name in a Discord modal. The bot creates the roster member, Discord link, and initial safe Away status in one server-only Supabase operation.
 - Added [`supabase/discord-registration.sql`](supabase/discord-registration.sql) for existing projects. It also enables Realtime events for shared guild-state updates, so open dashboards receive newly registered members without a refresh.
-- The existing `/link` and `/unlink` manager tools remain available for manual corrections.
+- The existing `/link` manager tool remains available for manual corrections. `/unlink` deletes the selected character from the shared roster and removes its Discord link, party/reserve references, and auction references in one server-side transaction.
+- Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Replaced the generic line class icons on member cards with class-specific symbols. Unsupported custom classes keep the Lucide fallback.
+- The generated image sheets were removed from the project; the live UI deliberately uses the clearer code-native symbols instead.
+- Visually verified the card crops in the local application. Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Expanded the shared class list to 20 choices: the eight launch classes plus Lord Knight, Paladin, Sniper, Bard, Dancer, High Wizard, Sage, High Priest, Champion, Assassin Cross, Whitesmith, and Night Walker.
+- The web dropdown and Discord registration panel now derive from this same 20-class list.
+- Existing saved legacy names such as Hunter and Priest stay valid and display a related advanced emblem; the database schema does not need to change.
+
+## Latest Completed Change
+
+- Changed the manager-only Discord `/unlink` command into a deliberate full removal: it deletes the selected character from the shared roster and removes its Discord link, party/Reserve assignments, and auction references together. This prevents an unlinked duplicate card from remaining in the app.
+- Added `unlink_and_delete_discord_member` to [`supabase/schema.sql`](supabase/schema.sql) and the existing-project migration [`supabase/discord-registration.sql`](supabase/discord-registration.sql).
+
+## Latest Completed Change
+
+- Replaced the detailed generated class-emblem crops in live member cards with clear code-native symbols. Each supported class now maps to a readable role cue at small sizes, such as shield, sword, wand, crosshair, music note, cross, hammer, or moon.
+- This is original interface artwork and does not copy Ragnarok World icons; the generated emblem sheets were removed from the project.
+- Visually verified the member-card symbols in the local application. Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added restrained class-family color cues to the simple symbols: martial red, magic blue, holy gold, ranged/nature green, craft orange, shadow purple, and performance pink. Color applies only to the icon tile, keeping names and class text easy to read.
 - Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.

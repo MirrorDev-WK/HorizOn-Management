@@ -181,6 +181,9 @@ Discord self-registration is deliberately text-first: a manager posts compact
 class-name buttons, then the member enters a character name in Discord's native
 form. Do not require game-class emojis or assign Discord server roles; the
 selected class is saved only as the HorizOn character class.
+When a manager uses `/unlink`, it is a destructive removal of that complete
+character record rather than a visual Not linked state. The command must remove
+the character's party, Reserve, auction, and Discord references together.
 
 The Unassigned pool is the complete derived list of unassigned guild members.
 Show In voice, Away, and Not linked members together; the static status badge
@@ -214,10 +217,18 @@ never obscures a bidder name.
 
 ## Class Visuals
 
-Use original placeholders/icons.
+Use small, high-contrast, code-native fantasy symbols for the supported classes:
+for example, a shield for Paladin, a crosshair for Sniper, a music note for Bard,
+and a hammer for Whitesmith. They must remain recognizable at card size. Do not
+copy official game icons or crop them from game screenshots.
+
+Use a restrained color cue behind each icon: martial red, magic blue, holy gold,
+ranged/nature green, craft orange, shadow purple, and performance pink. Keep
+the member-card text neutral and readable; color identifies the class symbol,
+not a player role.
 
 In the Add Member sheet, use a native, mobile-friendly dropdown grouped by
-Ragnarok: The New World launch classes and current second-job advancements. Keep
+Ragnarok: The New World launch classes and the twelve advanced classes. Keep
 the selected class name as the member's visible identity and provide an
 Other/custom option for future unsupported jobs.
 

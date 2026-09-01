@@ -80,6 +80,116 @@ $$;
 revoke all on function public.register_discord_member(text, text, text, text, text) from public;
 grant execute on function public.register_discord_member(text, text, text, text, text) to service_role;
 
+-- `/unlink` removes the full character record, its party/reserve/auction references,
+-- and its Discord link in the same transaction. Safe to run more than once.
+create or replace function public.unlink_and_delete_discord_member(p_member_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_state jsonb;
+  next_state jsonb;
+  member_id_to_remove text := trim(p_member_id);
+  party_index integer;
+  page_index integer;
+  item_index integer;
+begin
+  if member_id_to_remove = '' then
+    raise exception 'A member id is required.';
+  end if;
+
+  select state into current_state
+  from public.guild_states
+  where id = 'horizon'
+  for update;
+
+  if current_state is null then
+    raise exception 'The HorizOn guild state does not exist.';
+  end if;
+
+  next_state := jsonb_set(
+    current_state,
+    '{members}',
+    coalesce((
+      select jsonb_agg(member)
+      from jsonb_array_elements(coalesce(current_state->'members', '[]'::jsonb)) as entries(member)
+      where entries.member->>'id' <> member_id_to_remove
+    ), '[]'::jsonb),
+    true
+  );
+
+  next_state := jsonb_set(
+    next_state,
+    '{reserveMemberIds}',
+    coalesce((
+      select jsonb_agg(member_id)
+      from jsonb_array_elements(coalesce(next_state->'reserveMemberIds', '[]'::jsonb)) as entries(member_id)
+      where entries.member_id #>> '{}' <> member_id_to_remove
+    ), '[]'::jsonb),
+    true
+  );
+
+  if jsonb_array_length(coalesce(next_state->'parties', '[]'::jsonb)) > 0 then
+    for party_index in 0 .. jsonb_array_length(next_state->'parties') - 1 loop
+      next_state := jsonb_set(
+        next_state,
+        array['parties', party_index::text, 'memberIds'],
+        coalesce((
+          select jsonb_agg(member_id)
+          from jsonb_array_elements(coalesce(next_state #> array['parties', party_index::text, 'memberIds'], '[]'::jsonb)) as entries(member_id)
+          where entries.member_id #>> '{}' <> member_id_to_remove
+        ), '[]'::jsonb),
+        true
+      );
+    end loop;
+  end if;
+
+  if jsonb_array_length(coalesce(next_state->'auctionPages', '[]'::jsonb)) > 0 then
+    for page_index in 0 .. jsonb_array_length(next_state->'auctionPages') - 1 loop
+      if jsonb_array_length(coalesce(next_state #> array['auctionPages', page_index::text, 'items'], '[]'::jsonb)) > 0 then
+        for item_index in 0 .. jsonb_array_length(next_state #> array['auctionPages', page_index::text, 'items']) - 1 loop
+          next_state := jsonb_set(
+            next_state,
+            array['auctionPages', page_index::text, 'items', item_index::text, 'bidderMemberIds'],
+            coalesce((
+              select jsonb_agg(member_id)
+              from jsonb_array_elements(coalesce(next_state #> array['auctionPages', page_index::text, 'items', item_index::text, 'bidderMemberIds'], '[]'::jsonb)) as entries(member_id)
+              where entries.member_id #>> '{}' <> member_id_to_remove
+            ), '[]'::jsonb),
+            true
+          );
+          next_state := jsonb_set(
+            next_state,
+            array['auctionPages', page_index::text, 'items', item_index::text, 'eliminatedBidderMemberIds'],
+            coalesce((
+              select jsonb_agg(member_id)
+              from jsonb_array_elements(coalesce(next_state #> array['auctionPages', page_index::text, 'items', item_index::text, 'eliminatedBidderMemberIds'], '[]'::jsonb)) as entries(member_id)
+              where entries.member_id #>> '{}' <> member_id_to_remove
+            ), '[]'::jsonb),
+            true
+          );
+          if next_state #>> array['auctionPages', page_index::text, 'items', item_index::text, 'winnerMemberId'] = member_id_to_remove then
+            next_state := next_state #- array['auctionPages', page_index::text, 'items', item_index::text, 'winnerMemberId'];
+          end if;
+        end loop;
+      end if;
+    end loop;
+  end if;
+
+  update public.guild_states
+  set state = next_state, updated_at = timezone('utc', now())
+  where id = 'horizon';
+
+  delete from public.discord_member_links
+  where member_id = member_id_to_remove;
+end;
+$$;
+
+revoke all on function public.unlink_and_delete_discord_member(text) from public;
+grant execute on function public.unlink_and_delete_discord_member(text) to service_role;
+
 do $$
 begin
   if not exists (
