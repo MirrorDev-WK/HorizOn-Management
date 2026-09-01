@@ -14,7 +14,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 
 - Guild member list
 - Add guild members with name, a 20-option Ragnarok: The New World job dropdown, and optional CP
-- Delete manually added or imported members from their move sheet, with a confirmation prompt
+- Delete any member from their move sheet, with a confirmation prompt and Discord-link cleanup
 - Import a roster from an Excel or CSV file with Character Name and Class columns
 - Create, rename, and delete parties
 - Assign members to parties
@@ -213,7 +213,8 @@ The bot must keep running to receive Discord join/leave events.
 If you ran an earlier version of the Discord schema, run
 [`supabase/enable-realtime.sql`](supabase/enable-realtime.sql) once in the
 Supabase SQL Editor, then restart the bot. The dashboard will update as members
-join or leave the configured voice channel; no page refresh is needed.
+join or leave the configured voice channel, and as roster, party, Reserve, or
+Auction data changes; no page refresh is needed.
 
 For Discord self-registration, also run
 [`supabase/discord-registration.sql`](supabase/discord-registration.sql) once
@@ -227,7 +228,8 @@ through Supabase Realtime without a refresh.
 In Supabase, copy the **Secret key** from **Settings → API Keys** into
 `SUPABASE_SERVICE_ROLE_KEY`. Never put that key in code, `NEXT_PUBLIC_` variables,
 or a message. Only Discord users with **Manage Server** can run
-`/setup-registration`, `/link`, and `/unlink`. `/unlink` permanently deletes
+`/setup-registration`, `/link`, and `/unlink`. `/unlink` and the dashboard
+**Delete member** button permanently delete
 the selected character from the shared roster (including its party, reserve,
 auction references, and Discord link). Every guild member may use the
 buttons posted by `/setup-registration` to register one new character.

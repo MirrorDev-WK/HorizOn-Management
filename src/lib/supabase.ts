@@ -43,6 +43,14 @@ export async function saveSharedGuildState(state: GuildState): Promise<string | 
   return error?.message ?? null;
 }
 
+export async function deleteSharedGuildMember(memberId: string): Promise<string | null> {
+  const supabase = getBrowserClient();
+  if (!supabase) return null;
+
+  const { error } = await supabase.rpc("unlink_and_delete_discord_member", { p_member_id: memberId });
+  return error?.message ?? null;
+}
+
 export function subscribeToSharedGuildState(onChange: () => void): () => void {
   const supabase = getBrowserClient();
   if (!supabase) return () => undefined;

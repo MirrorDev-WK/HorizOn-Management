@@ -59,7 +59,8 @@ A manager's `/unlink` command permanently removes that selected character from
 the shared roster and its Discord link, including any party, Reserve, and
 auction references, so duplicate characters are not left behind.
 The browser must subscribe to the safe voice-status table with Supabase Realtime,
-so attendance changes appear without polling or a page refresh.
+and to the shared guild-state table, so roster and attendance changes appear in
+open dashboards without a refresh.
 
 Show guild attendance totals in the party header: **In voice** (currently in the
 configured main voice channel), **Away** (linked but outside that channel), and
@@ -179,7 +180,8 @@ re-upload a stale local browser roster.
 
 Add an **Auction** navigation section for Guild League items. An auction page
 has exactly four item rows. Each row has an editable item name and a bidder list
-made from the existing guild-member roster. A member may be recorded as a bidder
+made from the existing guild-member roster. Each row must provide a name/class
+search that adds a matching roster member as bidder. A member may be recorded as a bidder
 on more than one item. When an item has two or more bidders, provide a visible
 elimination wheel. Each spin removes the selected bidder, then the next spin
 uses only the remaining members; the final person left is saved as winner.
@@ -224,10 +226,10 @@ not copy official game icons. Retain a simple fallback symbol for an Other/custo
 class. Use restrained class-family colors: martial red, magic blue, holy gold,
 ranged/nature green, craft orange, shadow purple, and performance pink.
 
-The member move sheet must include a confirmed **Delete member** action for a
-manual or imported member. Deleting removes all roster, party, Reserve, and
-auction references. A Discord-linked member must be removed with the manager
-bot's `/unlink` command so the private Discord mapping is deleted safely too.
+The member move sheet must include a confirmed **Delete member** action.
+Deleting removes all roster, party, Reserve, auction, and Discord-link
+references in one shared-database transaction. The browser must never read or
+display a Discord User ID.
 
 Support search by character name and class.
 

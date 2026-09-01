@@ -42,7 +42,7 @@ import type { AuctionPage, Destination, GuildMember, GuildState, Party } from "@
 import { clearAuctionPages, createAuctionPage, createEmptyGuildState, deleteAuctionPage, deleteMember, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
 import { loadGuildState, resetGuildState, saveGuildState } from "@/lib/storage";
 import { readMemberImportFile, type ImportedMember, type MemberImportResult } from "@/lib/member-import";
-import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance, subscribeToSharedGuildState } from "@/lib/supabase";
+import { deleteSharedGuildMember, isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance, subscribeToSharedGuildState } from "@/lib/supabase";
 
 type DropId = `party:${string}` | `member:${string}:${string}` | "reserve" | "unassigned";
 type NewMemberInput = Pick<GuildMember, "name" | "className" | "cp">;
@@ -301,6 +301,7 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
   const [selectedPageId, setSelectedPageId] = useState(pages[0]?.id ?? "");
   const [wheelSession, setWheelSession] = useState<WheelSpinSession | null>(null);
   const [isWheelSpinning, setIsWheelSpinning] = useState(false);
+  const [bidderSearches, setBidderSearches] = useState<Record<string, string>>({});
   const page = pages.find((candidate) => candidate.id === selectedPageId) ?? pages[0];
   const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
 
@@ -345,9 +346,11 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
         const eliminatedMemberIds = new Set(item.eliminatedBidderMemberIds ?? []);
         const remainingBidders = bidders.filter((member) => !eliminatedMemberIds.has(member.id));
         const winner = item.winnerMemberId ? memberById.get(item.winnerMemberId) : undefined;
+        const bidderSearch = bidderSearches[item.id] ?? "";
+        const matchingMembers = members.filter((member) => !item.bidderMemberIds.includes(member.id) && `${member.name} ${member.className}`.toLowerCase().includes(bidderSearch.trim().toLowerCase())).slice(0, 6);
         return <section className="auction-item" key={item.id}>
           <div className="auction-item__top"><p className="eyebrow">Item {index + 1}</p><input aria-label={`Item ${index + 1} name`} defaultValue={item.name} onBlur={(event) => onRenameItem(page.id, item.id, event.target.value)} placeholder="Item name" /></div>
-          <div className="auction-item__bid"><select aria-label={`Choose bidder for ${item.name}`} defaultValue="" disabled={members.length === 0} onChange={(event) => { if (event.target.value) onAddBidder(page.id, item.id, event.target.value); event.currentTarget.value = ""; }}><option value="">{members.length === 0 ? "Add guild members first" : "Add guild member as bidder"}</option>{members.map((member) => <option key={member.id} value={member.id} disabled={item.bidderMemberIds.includes(member.id)}>{member.name} · {member.className}</option>)}</select></div>
+          <div className="auction-item__bid"><div className="auction-bidder-search"><Search size={16} /><input aria-label={`Search bidder for ${item.name}`} value={bidderSearch} disabled={members.length === 0} onChange={(event) => setBidderSearches((current) => ({ ...current, [item.id]: event.target.value }))} placeholder={members.length === 0 ? "Add guild members first" : "Search name or class to add bidder"} />{bidderSearch.trim() && <div className="auction-bidder-results" role="listbox" aria-label={`Matching bidders for ${item.name}`}>{matchingMembers.length > 0 ? matchingMembers.map((member) => <button key={member.id} type="button" role="option" aria-selected={false} onClick={() => { onAddBidder(page.id, item.id, member.id); setBidderSearches((current) => ({ ...current, [item.id]: "" })); }}><span>{member.name}</span><small>{member.className}</small></button>) : <p>No available members found.</p>}</div>}</div></div>
           <div className="auction-bidders" aria-label={`Bidders for ${item.name}`}>{bidders.length > 0 ? bidders.map((member) => <span className={eliminatedMemberIds.has(member.id) ? "auction-bidder auction-bidder--eliminated" : "auction-bidder"} key={member.id}>{member.name}{eliminatedMemberIds.has(member.id) && <em>Out</em>}<button type="button" aria-label={`Remove ${member.name} from ${item.name}`} onClick={() => onRemoveBidder(page.id, item.id, member.id)}><X size={13} /></button></span>) : <span className="auction-empty">No bidders yet</span>}</div>
           {bidders.length > 1 && <div className="auction-wheel-row">
             <div className="auction-winner"><span>{winner ? <>Winner: <strong>{winner.name}</strong></> : `${remainingBidders.length} members remain`}</span>{remainingBidders.length > 1 && <button className="secondary-button" type="button" onClick={() => openEliminationWheel(page.id, item.id, item.name, remainingBidders)}>Spin to remove</button>}</div>
@@ -388,7 +391,6 @@ function MoveSheet({ member, parties, sourcePartyId, onMove, onOpenReorder, onDe
           <button className="destination destination--muted" type="button" onClick={() => onMove({ type: "unassigned" })}><span><Users size={18} />Unassigned</span><small>Remove assignment</small></button>
         </div>
         <button className="danger-button delete-member-button" type="button" onClick={onDelete}><Trash2 size={17} />Delete member</button>
-        {member.isDiscordLinked && <p className="delete-member-note">Linked Discord characters must be removed with <strong>/unlink</strong> in Discord, so their private Discord link is deleted too.</p>}
       </section>
     </div>
   );
@@ -621,17 +623,23 @@ export default function PartySetupPage() {
     setReorderPartyId(null);
   };
 
-  const deleteSelectedMember = () => {
+  const deleteSelectedMember = async () => {
     if (!selectedMember) return;
-    if (selectedMember.isDiscordLinked) {
-      announce(`Use /unlink in Discord to remove ${selectedMember.name} and its private Discord link.`);
-      return;
-    }
     if (!window.confirm(`Delete ${selectedMember.name}? This removes the member from the roster, party, Reserve, and Auction.`)) return;
-    setGuildState((current) => deleteMember(current, selectedMember.id));
+    const member = selectedMember;
+    if (isSupabaseConfigured()) {
+      const error = await deleteSharedGuildMember(member.id);
+      if (error) {
+        setDatabaseMessage("Could not delete this member. Run the latest Supabase migration, then try again.");
+        announce("Could not delete this member from the shared database.");
+        return;
+      }
+      skipNextSharedStateSaveRef.current = true;
+    }
+    setGuildState((current) => deleteMember(current, member.id));
     setSelectedMember(null);
     setReorderPartyId(null);
-    announce(`${selectedMember.name} was deleted.`);
+    announce(`${member.name} was deleted${member.isDiscordLinked ? " and unlinked from Discord" : ""}.`);
   };
 
   const addMember = (member: NewMemberInput) => {

@@ -194,7 +194,7 @@ because of their voice status.
 
 Auction is a dedicated navigation view with compact page tabs. Each auction page
 uses exactly four stacked item rows. Place the item name at the left, a roster
-member picker and Add bidder action at the right, and show bidder names as
+member search (by character name or class) and result picker at the right, and show bidder names as
 removable chips below. Show the elimination wheel only for rows with at least
 two bidders. Each spin marks the landed bidder Out, removes them from the next
 wheel, and saves a winner only when one bidder remains. Keep the same popup open
@@ -228,9 +228,9 @@ the member-card text neutral and readable; color identifies the class symbol,
 not a player role.
 
 Place a full-width, clearly destructive **Delete member** button at the bottom
-of the member move sheet. Ask for confirmation before removal. For a
-Discord-linked member, keep the button visible but direct the manager to use
-`/unlink` in Discord, which also deletes the private link.
+of the member move sheet. Ask for confirmation before removal. It must remove a
+linked member and its private Discord mapping together without exposing the
+Discord User ID to the browser UI.
 
 In the Add Member sheet, use a native, mobile-friendly dropdown grouped by
 Ragnarok: The New World launch classes and the twelve advanced classes. Keep

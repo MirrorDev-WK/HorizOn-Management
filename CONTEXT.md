@@ -283,6 +283,20 @@ npm run build
 
 ## Latest Completed Change
 
-- Added a confirmed **Delete member** button to the member move sheet. Manual or imported members are removed from the shared roster/local state and all party, Reserve, and Auction references.
-- A linked character is not deleted by the browser button; it directs the manager to Discord `/unlink`, which atomically removes the private Discord mapping as well.
+- Added a confirmed **Delete member** button to the member move sheet. It removes the character from the shared roster/local state and all party, Reserve, Auction, and Discord-link references.
+- For a Supabase-backed roster, the dashboard invokes the same transaction as Discord `/unlink`; it returns no Discord identity data to the browser.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Expanded the dashboard **Delete member** action to delete linked members as well. The browser calls `unlink_and_delete_discord_member` by member id; the database removes the private link and cascades voice-status cleanup without exposing Discord User IDs.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Updated [`supabase/enable-realtime.sql`](supabase/enable-realtime.sql) to add both `guild_states` (roster, parties, Reserve, Auction) and `discord_voice_status` to the Supabase Realtime publication for existing projects. Run it once in the SQL Editor, then open dashboards receive changes without a page refresh.
+
+## Latest Completed Change
+
+- Replaced each Auction item's long bidder dropdown with a searchable guild-roster picker. Search matches character name or class, excludes existing bidders, and shows up to six quick-add results.
 - Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.

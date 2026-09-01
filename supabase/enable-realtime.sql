@@ -1,6 +1,6 @@
 -- Run this once in the Supabase SQL Editor if you already ran an earlier
--- version of schema.sql. It replaces the old read-only view with a safe table
--- that the browser can subscribe to. Raw Discord IDs remain bot-only.
+-- version of schema.sql. It enables Realtime for the shared roster/party state
+-- and the safe Discord voice-status table. Raw Discord IDs remain bot-only.
 
 do $$
 begin
@@ -13,6 +13,19 @@ begin
       and relation.relkind = 'v'
   ) then
     execute 'drop view public.discord_voice_status';
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'guild_states'
+  ) then
+    alter publication supabase_realtime add table public.guild_states;
   end if;
 end $$;
 

@@ -188,7 +188,9 @@ end;
 $$;
 
 revoke all on function public.unlink_and_delete_discord_member(text) from public;
-grant execute on function public.unlink_and_delete_discord_member(text) to service_role;
+-- The private guild dashboard has no login. It may request a deletion by member id,
+-- while this function returns no Discord identity data and performs the full cleanup.
+grant execute on function public.unlink_and_delete_discord_member(text) to anon, authenticated, service_role;
 
 do $$
 begin
