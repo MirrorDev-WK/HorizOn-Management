@@ -198,6 +198,10 @@ member search (by character name or class) and result picker at the right, and s
 removable chips below. Show the elimination wheel only for rows with at least
 two bidders. Each spin marks the landed bidder Out, removes them from the next
 wheel, and saves a winner only when one bidder remains. Keep the same popup open
+Keep rows compact and practical: a small item number, editable name, bidder count,
+plain labelled search with an optional roster dropdown, and chips are sufficient. Do not add generated imagery or
+AI artwork to this management interface.
+Dismiss an open roster dropdown when the coordinator clicks outside its search control.
 for every Spin again round. The item-row action opens this popup; the actual
 spin begins only from its clear Spin the wheel control. Include an explicit ×
 button at the popup's top-right so a coordinator can cancel and close it. Reuse the dark-green
@@ -214,6 +218,8 @@ focus: use a large wheel, full slice names, a long decelerating spin, and show
 the exact Out result below it. The pointer should land at varied safe positions
 inside slices, not their mathematical centers. Keep the central hub small so it
 never obscures a bidder name.
+Fit wheel-label type to each slice and name length; retain natural text sizing
+when it already fits, and compress only long labels that would cross the rim.
 
 ## Class Visuals
 

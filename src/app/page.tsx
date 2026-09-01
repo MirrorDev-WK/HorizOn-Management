@@ -254,8 +254,8 @@ function wheelSlicePath(startAngle: number, endAngle: number): string {
 function BiddingWheel({ bidders, selectedMemberId, isSpinning, rotationDegrees }: { bidders: GuildMember[]; selectedMemberId: string; isSpinning: boolean; rotationDegrees: number }) {
   const wheelRef = useRef<SVGSVGElement>(null);
   const sliceAngle = 360 / bidders.length;
-  const labelFontSize = Math.max(8, Math.min(16, 25 - bidders.length));
-  const labelLength = Math.max(32, Math.min(105, sliceAngle * 1.35));
+  const labelLength = Math.max(40, Math.min(88, sliceAngle * 0.74));
+  const baseLabelFontSize = Math.max(7, Math.min(11, 15 - bidders.length * 0.45));
 
   useEffect(() => {
     if (!isSpinning || !wheelRef.current) return;
@@ -277,9 +277,11 @@ function BiddingWheel({ bidders, selectedMemberId, isSpinning, rotationDegrees }
       const middleAngle = startAngle + sliceAngle / 2;
       const label = pointOnWheel(middleAngle, 75);
       const labelRotation = middleAngle - 90 + (middleAngle > 90 && middleAngle < 270 ? 180 : 0);
+      const labelFontSize = Math.max(7, Math.min(baseLabelFontSize, labelLength / Math.max(member.name.length * 0.62, 1)));
+      const shouldCompressLabel = member.name.length * labelFontSize * 0.62 > labelLength;
       return <g key={member.id} className={!isSpinning && member.id === selectedMemberId ? "wheel-slice wheel-slice--winner" : "wheel-slice"}>
         <path d={wheelSlicePath(startAngle, endAngle)} fill={wheelSliceColor(index)} />
-        <text x={label.x} y={label.y} fontSize={labelFontSize} textLength={labelLength} lengthAdjust="spacingAndGlyphs" transform={`rotate(${labelRotation} ${label.x} ${label.y})`}>{member.name}</text>
+        <text x={label.x} y={label.y} fontSize={labelFontSize} {...(shouldCompressLabel ? { textLength: labelLength, lengthAdjust: "spacingAndGlyphs" } : {})} transform={`rotate(${labelRotation} ${label.x} ${label.y})`}>{member.name}</text>
       </g>;
     })}
     <circle cx="120" cy="120" r="20" className="wheel-graphic__hub" />
@@ -302,6 +304,8 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
   const [wheelSession, setWheelSession] = useState<WheelSpinSession | null>(null);
   const [isWheelSpinning, setIsWheelSpinning] = useState(false);
   const [bidderSearches, setBidderSearches] = useState<Record<string, string>>({});
+  const [openBidderPickerId, setOpenBidderPickerId] = useState<string | null>(null);
+  const bidderPickerRef = useRef<HTMLDivElement>(null);
   const page = pages.find((candidate) => candidate.id === selectedPageId) ?? pages[0];
   const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
 
@@ -314,6 +318,16 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
     }, WHEEL_DRAW_DURATION_MS);
     return () => window.clearTimeout(timer);
   }, [isWheelSpinning, onEliminateBidder, wheelSession]);
+
+  useEffect(() => {
+    if (!openBidderPickerId) return;
+    const closePickerWhenClickingAway = (event: PointerEvent) => {
+      if (bidderPickerRef.current?.contains(event.target as Node)) return;
+      setOpenBidderPickerId(null);
+    };
+    document.addEventListener("pointerdown", closePickerWhenClickingAway);
+    return () => document.removeEventListener("pointerdown", closePickerWhenClickingAway);
+  }, [openBidderPickerId]);
 
   const openEliminationWheel = (pageId: string, itemId: string, itemName: string, bidders: GuildMember[]) => {
     setIsWheelSpinning(false);
@@ -336,7 +350,7 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
 
   return (
     <section className="auction-board" aria-label="Guild League auction">
-      <div className="workspace-head auction-head"><div><p className="eyebrow">Guild League · Auction</p><h1>Item bids</h1><p className="workspace-subtitle">Choose members from the guild roster to record who wants each item.</p></div><div className="auction-head__actions"><button className="secondary-button" type="button" disabled={pages.length <= 1} onClick={() => { if (!window.confirm(`Delete ${page.name}? Its item bids and winner results will be removed.`)) return; setSelectedPageId(pages.find((candidate) => candidate.id !== page.id)?.id ?? ""); onDeletePage(page.id); }}><Trash2 size={16} />Delete page</button><button className="secondary-button" type="button" onClick={onClearAuction}><Trash2 size={16} />Clear auction</button><button className="primary-button" type="button" onClick={onCreatePage}><Plus size={18} />New page</button></div></div>
+      <div className="workspace-head auction-head"><div><p className="eyebrow">Guild League · Auction</p><h1>Auction</h1><p className="workspace-subtitle">Add bidders from the guild roster, then draw only when there is more than one.</p></div><div className="auction-head__actions"><button className="secondary-button" type="button" disabled={pages.length <= 1} onClick={() => { if (!window.confirm(`Delete ${page.name}? Its item bids and winner results will be removed.`)) return; setSelectedPageId(pages.find((candidate) => candidate.id !== page.id)?.id ?? ""); onDeletePage(page.id); }}><Trash2 size={16} />Delete page</button><button className="secondary-button" type="button" onClick={onClearAuction}><Trash2 size={16} />Clear auction</button><button className="primary-button" type="button" onClick={onCreatePage}><Plus size={18} />New page</button></div></div>
       <div className="auction-page-tabs" aria-label="Select auction page">{pages.map((candidate) => <button key={candidate.id} className={candidate.id === page.id ? "auction-page-tab auction-page-tab--active" : "auction-page-tab"} type="button" onClick={() => setSelectedPageId(candidate.id)}>{candidate.name}</button>)}</div>
       <div className="auction-items">{page.items.map((item, index) => {
         const bidders = item.bidderMemberIds.flatMap((memberId) => {
@@ -347,10 +361,11 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
         const remainingBidders = bidders.filter((member) => !eliminatedMemberIds.has(member.id));
         const winner = item.winnerMemberId ? memberById.get(item.winnerMemberId) : undefined;
         const bidderSearch = bidderSearches[item.id] ?? "";
-        const matchingMembers = members.filter((member) => !item.bidderMemberIds.includes(member.id) && `${member.name} ${member.className}`.toLowerCase().includes(bidderSearch.trim().toLowerCase())).slice(0, 6);
+        const matchingMembers = members.filter((member) => !item.bidderMemberIds.includes(member.id) && `${member.name} ${member.className}`.toLowerCase().includes(bidderSearch.trim().toLowerCase()));
+        const isBidderPickerOpen = openBidderPickerId === item.id;
         return <section className="auction-item" key={item.id}>
-          <div className="auction-item__top"><p className="eyebrow">Item {index + 1}</p><input aria-label={`Item ${index + 1} name`} defaultValue={item.name} onBlur={(event) => onRenameItem(page.id, item.id, event.target.value)} placeholder="Item name" /></div>
-          <div className="auction-item__bid"><div className="auction-bidder-search"><Search size={16} /><input aria-label={`Search bidder for ${item.name}`} value={bidderSearch} disabled={members.length === 0} onChange={(event) => setBidderSearches((current) => ({ ...current, [item.id]: event.target.value }))} placeholder={members.length === 0 ? "Add guild members first" : "Search name or class to add bidder"} />{bidderSearch.trim() && <div className="auction-bidder-results" role="listbox" aria-label={`Matching bidders for ${item.name}`}>{matchingMembers.length > 0 ? matchingMembers.map((member) => <button key={member.id} type="button" role="option" aria-selected={false} onClick={() => { onAddBidder(page.id, item.id, member.id); setBidderSearches((current) => ({ ...current, [item.id]: "" })); }}><span>{member.name}</span><small>{member.className}</small></button>) : <p>No available members found.</p>}</div>}</div></div>
+          <div className="auction-item__top"><p className="auction-item__number">Item {index + 1}</p><input aria-label={`Item ${index + 1} name`} defaultValue={item.name} onBlur={(event) => onRenameItem(page.id, item.id, event.target.value)} placeholder="Item name" /><span className="auction-item__count">{bidders.length} bidder{bidders.length === 1 ? "" : "s"}</span></div>
+          <div className="auction-item__bid"><p className="auction-item__label">Add bidder</p><div className="auction-bidder-search" ref={isBidderPickerOpen ? bidderPickerRef : undefined}><Search size={16} /><input aria-label={`Search bidder for ${item.name}`} value={bidderSearch} disabled={members.length === 0} onFocus={() => setOpenBidderPickerId(item.id)} onChange={(event) => { setBidderSearches((current) => ({ ...current, [item.id]: event.target.value })); setOpenBidderPickerId(item.id); }} placeholder={members.length === 0 ? "Add guild members first" : "Search name or class"} /><button className="auction-bidder-toggle" type="button" aria-label={`Show members for ${item.name}`} aria-expanded={isBidderPickerOpen} disabled={members.length === 0} onClick={() => setOpenBidderPickerId((current) => current === item.id ? null : item.id)}><ChevronDown size={16} /></button>{isBidderPickerOpen && <div className="auction-bidder-results" role="listbox" aria-label={`Matching bidders for ${item.name}`}>{matchingMembers.length > 0 ? matchingMembers.map((member) => <button key={member.id} type="button" role="option" aria-selected={false} onClick={() => { onAddBidder(page.id, item.id, member.id); setBidderSearches((current) => ({ ...current, [item.id]: "" })); setOpenBidderPickerId(null); }}><span>{member.name}</span><small>{member.className}</small></button>) : <p>No available members found.</p>}</div>}</div></div>
           <div className="auction-bidders" aria-label={`Bidders for ${item.name}`}>{bidders.length > 0 ? bidders.map((member) => <span className={eliminatedMemberIds.has(member.id) ? "auction-bidder auction-bidder--eliminated" : "auction-bidder"} key={member.id}>{member.name}{eliminatedMemberIds.has(member.id) && <em>Out</em>}<button type="button" aria-label={`Remove ${member.name} from ${item.name}`} onClick={() => onRemoveBidder(page.id, item.id, member.id)}><X size={13} /></button></span>) : <span className="auction-empty">No bidders yet</span>}</div>
           {bidders.length > 1 && <div className="auction-wheel-row">
             <div className="auction-winner"><span>{winner ? <>Winner: <strong>{winner.name}</strong></> : `${remainingBidders.length} members remain`}</span>{remainingBidders.length > 1 && <button className="secondary-button" type="button" onClick={() => openEliminationWheel(page.id, item.id, item.name, remainingBidders)}>Spin to remove</button>}</div>

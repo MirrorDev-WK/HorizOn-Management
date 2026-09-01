@@ -48,3 +48,42 @@ nav { margin-top:50px; }.nav-item { display:flex; align-items:center; gap:11px; 
 @media (max-width:899px) { .mobile-view-tabs { display:flex; gap:5px; margin-left:auto; margin-right:8px; }.mobile-view-tab { min-height:31px; padding:0 8px; border:1px solid #315337; border-radius:999px; color:#a4b9a6; background:#081b10; font-size:11px; font-weight:700; }.mobile-view-tab--active { border-color:#71af4c; color:#e8ffd1; background:#1b4321; }.auction-workspace { grid-column:auto; }.auction-head__actions { justify-content:start; }.auction-item__top { align-items:flex-start; flex-direction:column; gap:7px; }.auction-item__top .eyebrow { width:auto; }.auction-item__top input { width:100%; } }
 @media (max-width:899px) { .auction-winner { align-items:flex-start; flex-direction:column; gap:7px; }.auction-winner .secondary-button { width:100%; } }
 @media (max-width:420px) { .wheel-modal { padding:21px 15px; }.wheel-modal__stage { width:min(330px, calc(100vw - 42px)); }.wheel-modal h2 { font-size:21px; } }
+
+/* Minimal Auction pass: compact rows, clear actions, and no image assets. */
+.auction-board { max-width:1040px; margin:0 auto; }
+.auction-head { align-items:center; gap:16px; margin-bottom:14px; }
+.auction-head h1 { margin-bottom:0; }
+.auction-head .workspace-subtitle { max-width:560px; }
+.auction-head__actions { gap:6px; }
+.auction-head__actions .secondary-button, .auction-head__actions .primary-button { min-height:36px; padding:0 10px; }
+.auction-page-tabs { margin-bottom:12px; }
+.auction-items { gap:9px; }
+.auction-item { padding:12px; border-radius:10px; background:#091f12; box-shadow:none; }
+.auction-item__top { gap:9px; }
+.auction-item__number { flex:none; width:48px; margin:0; color:#9acb72; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.auction-item__top input { min-height:38px; font-size:14px; font-weight:700; }
+.auction-item__count { flex:none; min-width:66px; color:#a7c7a4; font-size:11px; text-align:right; white-space:nowrap; }
+.auction-item__bid { display:grid; grid-template-columns:70px minmax(0, 1fr); align-items:center; gap:8px; margin-top:8px; }
+.auction-item__label { margin:0; color:#8dad8b; font-size:11px; font-weight:700; }
+.auction-bidder-search input { min-height:36px; }
+.auction-bidder-search input { padding-right:38px; }
+.auction-bidder-toggle { position:absolute; z-index:2; right:4px; display:grid; width:30px; height:30px; place-items:center; border:0; border-radius:6px; color:#a7c7a4; background:transparent; }
+.auction-bidder-toggle:hover:not(:disabled) { color:#effbdd; background:#173b21; }
+.auction-bidder-toggle:disabled { cursor:not-allowed; opacity:.45; }
+.auction-bidder-search .auction-bidder-toggle svg { position:static; left:auto; pointer-events:auto; }
+.auction-bidder-toggle[aria-expanded="true"] svg { transform:rotate(180deg); }
+
+/* Wheel labels stay readable without dominating their slice. */
+.wheel-slice text { font-weight:700; letter-spacing:.1px; stroke-width:1.4px; }
+.auction-bidders { min-height:24px; margin-top:9px; }
+.auction-bidder { min-height:25px; padding:0 6px; }
+.auction-wheel-row { margin-top:9px; padding-top:9px; }
+.auction-winner { min-height:32px; }
+
+@media (max-width:899px) {
+  .auction-head { align-items:flex-start; }
+  .auction-head__actions .secondary-button, .auction-head__actions .primary-button { min-height:38px; }
+  .auction-item__top { display:grid; grid-template-columns:48px minmax(0, 1fr); align-items:center; }
+  .auction-item__count { grid-column:2; text-align:left; }
+  .auction-item__bid { grid-template-columns:1fr; gap:5px; }
+}

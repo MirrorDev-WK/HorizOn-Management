@@ -185,6 +185,10 @@ search that adds a matching roster member as bidder. A member may be recorded as
 on more than one item. When an item has two or more bidders, provide a visible
 elimination wheel. Each spin removes the selected bidder, then the next spin
 uses only the remaining members; the final person left is saved as winner.
+Keep each item row minimal and quick to scan: item number, editable item name,
+bidder count, labelled roster search with an optional full roster dropdown, removable bidder chips, and the draw action
+only when it applies. Use code-native UI only; do not use generated or AI artwork.
+The roster dropdown must close when the coordinator clicks outside it.
 Use Spin to remove to open the draw popup first; the coordinator starts the
 actual draw with a Spin the wheel action inside that popup. Keep it open
 between eliminations with a Spin again action, and provide an explicit × close
@@ -201,6 +205,8 @@ Land the pointer at a random safe point inside that slice rather than always at
 the slice center.
 The wheel must be large enough to read full names, have a slower physical-style
 deceleration, and show only the final winner instead of repeating every name
+below the wheel. Wheel-label font size and compression must adapt to the slice
+space and name length, so labels remain inside the wheel rather than oversized.
 below the wheel.
 
 Provide an **Import members** action for `.xlsx` and `.csv` roster

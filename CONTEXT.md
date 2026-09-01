@@ -15,6 +15,7 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
 - Auction is a shared Guild League board stored in the same Supabase guild state. Every auction page has four item rows, and each row records roster members who want to bid. When a row has two or more bidders, an elimination wheel removes one selected member per spin; the final member left is saved as winner. Changing bidders resets that draw. Bid price and payment logic are out of scope.
+- Auction rows use a compact, code-native management layout: item number, editable item name, bidder count, labelled roster search, removable bidder chips, and a draw action only when needed. No generated or AI artwork is used.
 - Clear auction is confirmed before it resets the entire board to one empty default Page 1, removing all other pages, item names, bidder lists, and winners.
 - An Auction page may be deleted only when at least one other page remains. Elimination spins use a large, focused pop-up draw with one colored, named slice per remaining bidder; the pointer visually stops on the removed bidder's slice.
 - Wheel slice colors are generated per bidder instead of using a fixed short palette, so larger draws retain visually distinct slices.
@@ -299,4 +300,25 @@ npm run build
 ## Latest Completed Change
 
 - Replaced each Auction item's long bidder dropdown with a searchable guild-roster picker. Search matches character name or class, excludes existing bidders, and shows up to six quick-add results.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Refined Auction into a minimal code-only interface. The four stored item rows are more compact and show the item number, item name, bidder total, labelled Add bidder search, bidder chips, and the existing wheel action only when it applies.
+- The change is visual only; Auction pages, bidder records, elimination rounds, and saved winners keep their existing behavior.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added a chevron dropdown to every Auction Add bidder search. Clicking it opens all eligible guild members; typing filters that same list by name or class.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Reduced and fitted Auction wheel labels per slice and per character-name length. Short names keep their natural width; long names compress only as needed, so labels stay inside the wheel instead of dominating it.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Auction’s bidder dropdown now closes when the coordinator clicks outside its search and results area.
 - Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
