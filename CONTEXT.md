@@ -280,3 +280,9 @@ npm run build
 
 - Added restrained class-family color cues to the simple symbols: martial red, magic blue, holy gold, ranged/nature green, craft orange, shadow purple, and performance pink. Color applies only to the icon tile, keeping names and class text easy to read.
 - Verified with `npx tsc --noEmit`, `npm run test:state`, `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added a confirmed **Delete member** button to the member move sheet. Manual or imported members are removed from the shared roster/local state and all party, Reserve, and Auction references.
+- A linked character is not deleted by the browser button; it directs the manager to Discord `/unlink`, which atomically removes the private Discord mapping as well.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.

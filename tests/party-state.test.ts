@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "../src/features/party-manager/constants";
 import type { GuildMember, GuildState } from "../src/features/party-manager/types";
-import { clearAuctionPages, createAuctionPage, deleteAuctionPage, getUnassignedMembers, moveMember, normalizeGuildState, swapMemberPositions } from "../src/features/party-manager/utils";
+import { clearAuctionPages, createAuctionPage, deleteAuctionPage, deleteMember, getUnassignedMembers, moveMember, normalizeGuildState, swapMemberPositions } from "../src/features/party-manager/utils";
 import { parseMemberImportRows } from "../src/lib/member-import";
 import { parseDiscordLinkImportRows } from "../src/lib/discord-link-import";
 
@@ -104,6 +104,24 @@ test("swapping positions only changes the order within one party", () => {
   const result = swapMemberPositions(state, "first", "bek", "mira");
   assert.deepEqual(result.state.parties[0].memberIds, ["mira", "astra", "bek"]);
   assert.deepEqual(result.state.parties[1].memberIds, []);
+});
+
+test("deleting a member removes its party, reserve, and auction references", () => {
+  const state = freshState();
+  state.reserveMemberIds = ["astra"];
+  state.auctionPages[0].items[0] = {
+    id: "one",
+    name: "Crown",
+    bidderMemberIds: ["bek", "astra"],
+    eliminatedBidderMemberIds: ["bek"],
+    winnerMemberId: "astra",
+  };
+  const result = deleteMember(state, "astra");
+  assert.equal(result.members.some((member) => member.id === "astra"), false);
+  assert.deepEqual(result.reserveMemberIds, []);
+  assert.deepEqual(result.auctionPages[0].items[0].bidderMemberIds, ["bek"]);
+  assert.deepEqual(result.auctionPages[0].items[0].eliminatedBidderMemberIds, ["bek"]);
+  assert.equal(result.auctionPages[0].items[0].winnerMemberId, undefined);
 });
 
 test("the Add Member dropdown contains 20 distinct Ragnarok The New World jobs", () => {

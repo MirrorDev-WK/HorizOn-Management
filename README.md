@@ -14,6 +14,7 @@ This is an internal tool for a single guild. It is not a public multi-guild plat
 
 - Guild member list
 - Add guild members with name, a 20-option Ragnarok: The New World job dropdown, and optional CP
+- Delete manually added or imported members from their move sheet, with a confirmation prompt
 - Import a roster from an Excel or CSV file with Character Name and Class columns
 - Create, rename, and delete parties
 - Assign members to parties

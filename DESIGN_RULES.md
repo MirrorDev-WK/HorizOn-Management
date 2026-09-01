@@ -227,6 +227,11 @@ ranged/nature green, craft orange, shadow purple, and performance pink. Keep
 the member-card text neutral and readable; color identifies the class symbol,
 not a player role.
 
+Place a full-width, clearly destructive **Delete member** button at the bottom
+of the member move sheet. Ask for confirmation before removal. For a
+Discord-linked member, keep the button visible but direct the manager to use
+`/unlink` in Discord, which also deletes the private link.
+
 In the Add Member sheet, use a native, mobile-friendly dropdown grouped by
 Ragnarok: The New World launch classes and the twelve advanced classes. Keep
 the selected class name as the member's visible identity and provide an

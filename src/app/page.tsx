@@ -39,7 +39,7 @@ import type { LucideIcon } from "lucide-react";
 import { createElement, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "@/features/party-manager/constants";
 import type { AuctionPage, Destination, GuildMember, GuildState, Party } from "@/features/party-manager/types";
-import { clearAuctionPages, createAuctionPage, createEmptyGuildState, deleteAuctionPage, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
+import { clearAuctionPages, createAuctionPage, createEmptyGuildState, deleteAuctionPage, deleteMember, getPartyMembers, getUnassignedMembers, moveMember, swapMemberPositions } from "@/features/party-manager/utils";
 import { loadGuildState, resetGuildState, saveGuildState } from "@/lib/storage";
 import { readMemberImportFile, type ImportedMember, type MemberImportResult } from "@/lib/member-import";
 import { isSupabaseConfigured, loadDiscordVoiceAttendance, loadSharedGuildState, mergeDiscordVoiceAttendance, saveSharedGuildState, subscribeToDiscordVoiceAttendance, subscribeToSharedGuildState } from "@/lib/supabase";
@@ -367,7 +367,7 @@ function AuctionBoard({ pages, members, onCreatePage, onDeletePage, onClearAucti
   );
 }
 
-function MoveSheet({ member, parties, sourcePartyId, onMove, onOpenReorder, onClose }: { member: GuildMember; parties: Party[]; sourcePartyId?: string; onMove: (destination: Destination) => void; onOpenReorder: (partyId: string) => void; onClose: () => void }) {
+function MoveSheet({ member, parties, sourcePartyId, onMove, onOpenReorder, onDelete, onClose }: { member: GuildMember; parties: Party[]; sourcePartyId?: string; onMove: (destination: Destination) => void; onOpenReorder: (partyId: string) => void; onDelete: () => void; onClose: () => void }) {
   const sourceParty = parties.find((party) => party.id === sourcePartyId);
   return (
     <div className="sheet-backdrop" role="presentation" onMouseDown={onClose}>
@@ -387,6 +387,8 @@ function MoveSheet({ member, parties, sourcePartyId, onMove, onOpenReorder, onCl
           <button className="destination" type="button" onClick={() => onMove({ type: "reserve" })}><span><Crown size={18} />Reserve</span><small>No limit</small></button>
           <button className="destination destination--muted" type="button" onClick={() => onMove({ type: "unassigned" })}><span><Users size={18} />Unassigned</span><small>Remove assignment</small></button>
         </div>
+        <button className="danger-button delete-member-button" type="button" onClick={onDelete}><Trash2 size={17} />Delete member</button>
+        {member.isDiscordLinked && <p className="delete-member-note">Linked Discord characters must be removed with <strong>/unlink</strong> in Discord, so their private Discord link is deleted too.</p>}
       </section>
     </div>
   );
@@ -619,6 +621,19 @@ export default function PartySetupPage() {
     setReorderPartyId(null);
   };
 
+  const deleteSelectedMember = () => {
+    if (!selectedMember) return;
+    if (selectedMember.isDiscordLinked) {
+      announce(`Use /unlink in Discord to remove ${selectedMember.name} and its private Discord link.`);
+      return;
+    }
+    if (!window.confirm(`Delete ${selectedMember.name}? This removes the member from the roster, party, Reserve, and Auction.`)) return;
+    setGuildState((current) => deleteMember(current, selectedMember.id));
+    setSelectedMember(null);
+    setReorderPartyId(null);
+    announce(`${selectedMember.name} was deleted.`);
+  };
+
   const addMember = (member: NewMemberInput) => {
     const id = globalThis.crypto?.randomUUID?.() ?? `member-${Date.now()}`;
     setGuildState((current) => ({ ...current, members: [...current.members, { ...member, id, isInMainVoice: false }] }));
@@ -791,7 +806,7 @@ export default function PartySetupPage() {
         {toast && <p className="toast" role="status">{toast}</p>}
       </main>
       <DragOverlay dropAnimation={null} modifiers={[snapCenterToCursor]}>{activeDragMember ? <DragPreview member={activeDragMember} /> : null}</DragOverlay>
-      {selectedMember && !reorderPartyId && <MoveSheet member={selectedMember} parties={guildState.parties} sourcePartyId={guildState.parties.find((party) => party.memberIds.includes(selectedMember.id))?.id} onMove={(destination) => moveSelectedMember(selectedMember.id, destination)} onOpenReorder={setReorderPartyId} onClose={() => setSelectedMember(null)} />}
+      {selectedMember && !reorderPartyId && <MoveSheet member={selectedMember} parties={guildState.parties} sourcePartyId={guildState.parties.find((party) => party.memberIds.includes(selectedMember.id))?.id} onMove={(destination) => moveSelectedMember(selectedMember.id, destination)} onOpenReorder={setReorderPartyId} onDelete={deleteSelectedMember} onClose={() => setSelectedMember(null)} />}
       {selectedMember && reorderPartyId && guildState.parties.find((party) => party.id === reorderPartyId) && <ReorderSheet member={selectedMember} party={guildState.parties.find((party) => party.id === reorderPartyId)!} members={guildState.members} onSwap={swapSelectedMemberPosition} onBack={() => setReorderPartyId(null)} />}
       {isAddMemberOpen && <AddMemberSheet onAdd={addMember} onClose={() => setIsAddMemberOpen(false)} />}
       {isImportMembersOpen && <ImportMembersSheet existingMemberNames={guildState.members.map((member) => member.name)} onImport={importMembers} onClose={() => setIsImportMembersOpen(false)} />}

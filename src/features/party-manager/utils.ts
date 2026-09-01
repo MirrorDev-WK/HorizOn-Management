@@ -74,6 +74,11 @@ export function getPartyMembers(party: Party, members: GuildMember[]): GuildMemb
   });
 }
 
+export function deleteMember(state: GuildState, memberId: string): GuildState {
+  const members = state.members.filter((member) => member.id !== memberId);
+  return normalizeGuildState({ ...state, members }, members);
+}
+
 export function moveMember(
   state: GuildState,
   memberId: string,

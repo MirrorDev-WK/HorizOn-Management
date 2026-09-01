@@ -224,6 +224,11 @@ not copy official game icons. Retain a simple fallback symbol for an Other/custo
 class. Use restrained class-family colors: martial red, magic blue, holy gold,
 ranged/nature green, craft orange, shadow purple, and performance pink.
 
+The member move sheet must include a confirmed **Delete member** action for a
+manual or imported member. Deleting removes all roster, party, Reserve, and
+auction references. A Discord-linked member must be removed with the manager
+bot's `/unlink` command so the private Discord mapping is deleted safely too.
+
 Support search by character name and class.
 
 When the list is long, make the Unassigned member area scrollable. Clearly say
