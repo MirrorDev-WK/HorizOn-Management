@@ -18,7 +18,6 @@ import {
   Hammer,
   Hand,
   Headphones,
-  Menu,
   Moon,
   Music2,
   Pencil,
@@ -809,11 +808,12 @@ export default function PartySetupPage() {
           <div className="sidebar-note"><Crown size={17} /><span>Ready for<br /><strong>Guild League</strong></span></div>
         </aside>
 
-        <header className="mobile-header"><div className="brand"><span className="brand-mark"><Sparkles size={18} /></span><strong>HorizOn</strong></div><div className="mobile-view-tabs"><button className={activeView === "party" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("party")}>Party</button><button className={activeView === "auction" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("auction")}>Auction</button></div><button className="icon-button" type="button" aria-label="Menu"><Menu size={20} /></button></header>
+        <header className="mobile-header"><div className="brand"><span className="brand-mark"><Sparkles size={18} /></span><strong>HorizOn</strong></div><div className="mobile-view-tabs"><button className={activeView === "party" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("party")}>Party</button><button className={activeView === "auction" ? "mobile-view-tab mobile-view-tab--active" : "mobile-view-tab"} type="button" onClick={() => setActiveView("auction")}>Auction</button></div><button className="icon-button mobile-roster-button" type="button" aria-label="Open guild roster" onClick={() => document.getElementById("member-pool")?.scrollIntoView({ behavior: "smooth", block: "start" })}><Users size={19} /></button></header>
 
         {activeView === "party" && <aside className="member-pool" id="member-pool">
           <DroppableArea id="unassigned" className="unassigned-zone drop-zone">
           <div className="pool-title"><div><p className="eyebrow">Guild roster</p><h1>Unassigned <span>{unassignedMembers.length}</span></h1></div><div className="pool-actions"><button className="icon-button" type="button" aria-label="Import members" onClick={() => setIsImportMembersOpen(true)}><FileUp size={17} /></button><button className="icon-button" type="button" aria-label="Add member" onClick={() => setIsAddMemberOpen(true)}><Plus size={18} /></button></div></div>
+          <p className="mobile-roster-help">Tap a member to assign or move.</p>
           <label className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name or class" aria-label="Search unassigned members" /></label>
           <div className="member-list">
             {filteredUnassignedMembers.map((member) => <DraggableMember key={member.id} member={member} compact onSelect={setSelectedMember} />)}

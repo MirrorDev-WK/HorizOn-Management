@@ -153,6 +153,9 @@ Unassigned Members
 
 Desktop additionally supports drag and drop with dnd-kit.
 
+On mobile, provide a direct roster shortcut from the header and keep roster
+member cards as full-width touch targets with a concise instruction.
+
 Recommended layout:
 
 ```text

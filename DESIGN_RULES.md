@@ -55,6 +55,8 @@ Dark green dominates. Bright green is an accent, not the background of everythin
 Design from 360px upward.
 
 Do not shrink the desktop dashboard into a tiny three-column layout.
+On mobile, the roster must be easy to reach from the sticky header, and each
+member card must be a generous full-width touch target rather than a dense grid.
 
 Mobile hierarchy:
 
