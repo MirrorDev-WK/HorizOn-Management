@@ -236,11 +236,16 @@ The member move sheet must include a confirmed **Delete member** action.
 Deleting removes all roster, party, Reserve, auction, and Discord-link
 references in one shared-database transaction. The browser must never read or
 display a Discord User ID.
+The move sheet must also provide **Edit name**. Renaming changes only the
+character name and retains the same member id, party/Reserve/Auction references,
+and Discord link.
 
 Support search by character name and class.
 
 When the list is long, make the Unassigned member area scrollable. Clearly say
 when there are no unassigned members or no search matches.
+On a wide desktop, show two generous Party cards per row so member names and
+party controls remain readable; do not compress to four narrow cards per row.
 
 ## Party Cards
 

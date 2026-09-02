@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_PARTY_CAPACITY, RAGNAROK_NEW_WORLD_CLASS_GROUPS, RAGNAROK_NEW_WORLD_CLASS_OPTION_COUNT } from "../src/features/party-manager/constants";
 import type { GuildMember, GuildState } from "../src/features/party-manager/types";
-import { clearAuctionPages, createAuctionPage, deleteAuctionPage, deleteMember, getUnassignedMembers, moveMember, normalizeGuildState, swapMemberPositions } from "../src/features/party-manager/utils";
+import { clearAuctionPages, createAuctionPage, deleteAuctionPage, deleteMember, getUnassignedMembers, moveMember, normalizeGuildState, renameMember, swapMemberPositions } from "../src/features/party-manager/utils";
 import { parseMemberImportRows } from "../src/lib/member-import";
 import { parseDiscordLinkImportRows } from "../src/lib/discord-link-import";
 
@@ -122,6 +122,19 @@ test("deleting a member removes its party, reserve, and auction references", () 
   assert.deepEqual(result.auctionPages[0].items[0].bidderMemberIds, ["bek"]);
   assert.deepEqual(result.auctionPages[0].items[0].eliminatedBidderMemberIds, ["bek"]);
   assert.equal(result.auctionPages[0].items[0].winnerMemberId, undefined);
+});
+
+test("renaming a member preserves their id, Discord link, and assignments", () => {
+  const state = freshState();
+  state.members = state.members.map((member) => member.id === "bek" ? { ...member, isDiscordLinked: true, discordUsername: "BekDiscord", isInMainVoice: true } : member);
+  state.auctionPages[0].items[0] = { id: "one", name: "Crown", bidderMemberIds: ["bek"] };
+  const result = renameMember(state, "bek", "Bek Renamed");
+  const renamed = result.members.find((member) => member.id === "bek");
+  assert.equal(renamed?.name, "Bek Renamed");
+  assert.equal(renamed?.isDiscordLinked, true);
+  assert.equal(renamed?.discordUsername, "BekDiscord");
+  assert.deepEqual(result.parties[0].memberIds, ["bek"]);
+  assert.deepEqual(result.auctionPages[0].items[0].bidderMemberIds, ["bek"]);
 });
 
 test("the Add Member dropdown contains 20 distinct Ragnarok The New World jobs", () => {

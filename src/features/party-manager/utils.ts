@@ -79,6 +79,15 @@ export function deleteMember(state: GuildState, memberId: string): GuildState {
   return normalizeGuildState({ ...state, members }, members);
 }
 
+export function renameMember(state: GuildState, memberId: string, rawName: string): GuildState {
+  const name = rawName.trim();
+  if (!name) return state;
+  return {
+    ...state,
+    members: state.members.map((member) => member.id === memberId ? { ...member, name } : member),
+  };
+}
+
 export function moveMember(
   state: GuildState,
   memberId: string,

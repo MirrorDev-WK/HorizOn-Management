@@ -14,6 +14,7 @@ This document is the short working memory for the **HorizOn** Guild Party Manage
 - Discord voice attendance and text-button self-registration are approved. A separate server-side bot may create one roster character and Discord link after a member selects a class and enters their in-game name, and it updates only the configured main voice channel's presence; general Discord integration remains out of scope.
 - The Unassigned pool is the derived list of every member not assigned to a party or Reserve. In voice, Away, and Not linked members all remain visible, with their Discord status shown on the card.
 - The app starts with an empty roster. Guild members are added manually or imported from Excel/CSV; no mockup roster or Restore Demo Data action remains.
+- Managers can edit a character name from the member move sheet. This keeps the same member id, so Discord linkage, voice attendance, party/Reserve placement, and Auction bids remain connected.
 - Auction is a shared Guild League board stored in the same Supabase guild state. Every auction page has four item rows, and each row records roster members who want to bid. When a row has two or more bidders, an elimination wheel removes one selected member per spin; the final member left is saved as winner. Changing bidders resets that draw. Bid price and payment logic are out of scope.
 - Auction rows use a compact, code-native management layout: item number, editable item name, bidder count, labelled roster search, removable bidder chips, and a draw action only when needed. No generated or AI artwork is used.
 - Clear auction is confirmed before it resets the entire board to one empty default Page 1, removing all other pages, item names, bidder lists, and winners.
@@ -327,3 +328,13 @@ npm run build
 
 - Fixed desktop Unassigned roster overflow. The left roster remains within the viewport and its member list scrolls independently when there are many members.
 - Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Changed the wide-desktop Party workspace to two cards per row, preventing the cramped four-card layout and preserving room for member names and controls.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (12 passing tests), `npm run lint`, and `npm run build`.
+
+## Latest Completed Change
+
+- Added **Edit name** to the member move sheet. It updates only the character-name field and preserves the member id, Discord link, live voice status, party/Reserve placement, and Auction references.
+- Verified with `npx tsc --noEmit`, `npm run test:state` (13 passing tests), `npm run lint`, and `npm run build`.

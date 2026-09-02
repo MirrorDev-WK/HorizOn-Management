@@ -122,6 +122,8 @@ Example:
 Use subtle green borders and elevated dark surfaces.
 
 Full parties should be visibly full without becoming visually noisy.
+On wide desktop screens, use two Party cards per row. Prefer wide readable
+cards over fitting four narrow Party cards into one row.
 
 ## Party Member Card
 
@@ -237,6 +239,9 @@ Place a full-width, clearly destructive **Delete member** button at the bottom
 of the member move sheet. Ask for confirmation before removal. It must remove a
 linked member and its private Discord mapping together without exposing the
 Discord User ID to the browser UI.
+Place a full-width secondary **Edit name** button above Delete member. It changes
+only the in-game character name, so the Discord badge and existing assignments
+remain intact.
 
 In the Add Member sheet, use a native, mobile-friendly dropdown grouped by
 Ragnarok: The New World launch classes and the twelve advanced classes. Keep
